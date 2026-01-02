@@ -1,7 +1,7 @@
 class GameSessionChannel < ApplicationCable::Channel
   def subscribed
     @game_session = GameSession.find_by(code: params[:code])
-    
+
     if @game_session
       stream_for @game_session
     else
@@ -15,20 +15,20 @@ class GameSessionChannel < ApplicationCable::Channel
 
   def submit_word(data)
     return unless @game_session&.active?
-    
+
     player = find_player(data["player_token"])
     return unless player
     return if @game_session.player_submitted?(player)
-    
+
     word = data["word"].to_s.strip
     return if word.blank?
-    
+
     @game_session.submissions.create!(
       player: player,
       round_number: @game_session.current_round,
       word: word
     )
-    
+
     # Check if all players have submitted
     if @game_session.all_players_submitted?
       process_round_completion
@@ -43,7 +43,7 @@ class GameSessionChannel < ApplicationCable::Channel
 
   def process_round_completion
     winning_word = @game_session.determine_winner
-    
+
     # Check for END keyword
     if winning_word&.downcase == "end"
       @game_session.update!(status: :complete)
@@ -53,7 +53,7 @@ class GameSessionChannel < ApplicationCable::Channel
       })
     else
       @game_session.add_winning_word!(winning_word) if winning_word
-      
+
       GameSessionChannel.broadcast_to(@game_session, {
         type: "word_revealed",
         word: winning_word,

@@ -4,18 +4,18 @@ class GameSessionsController < ApplicationController
 
   def create
     @game_session = GameSession.new(game_session_params)
-    
+
     if @game_session.save
       # Create host player
       host_player = @game_session.players.create!(
         name: params[:host_name].presence || "Host",
         token: @game_session.host_token
       )
-      
+
       # Store player token in session
       session[:player_tokens] ||= {}
       session[:player_tokens][@game_session.code] = host_player.token
-      
+
       redirect_to game_session_path(@game_session.code)
     else
       redirect_to root_path, alert: "Could not create session"
@@ -40,18 +40,18 @@ class GameSessionsController < ApplicationController
     end
 
     player = @game_session.players.create!(name: name)
-    
+
     # Store player token in session
     session[:player_tokens] ||= {}
     session[:player_tokens][@game_session.code] = player.token
-    
+
     # Broadcast player joined
     GameSessionChannel.broadcast_to(@game_session, {
       type: "player_joined",
       player_name: player.name,
       player_count: @game_session.players.count
     })
-    
+
     redirect_to game_session_path(@game_session.code)
   end
 
@@ -65,11 +65,11 @@ class GameSessionsController < ApplicationController
     end
 
     @game_session.update!(status: :active, round_started_at: Time.current)
-    
+
     GameSessionChannel.broadcast_to(@game_session, {
       type: "game_started"
     })
-    
+
     redirect_to game_session_path(@game_session.code)
   end
 
@@ -79,12 +79,12 @@ class GameSessionsController < ApplicationController
     end
 
     @game_session.update!(status: :complete)
-    
+
     GameSessionChannel.broadcast_to(@game_session, {
       type: "game_ended",
       message: @game_session.message
     })
-    
+
     redirect_to game_session_path(@game_session.code)
   end
 
@@ -135,7 +135,7 @@ class GameSessionsController < ApplicationController
 
   def process_round_completion
     winning_word = @game_session.determine_winner
-    
+
     # Check for END keyword
     if winning_word&.downcase == "end"
       @game_session.update!(status: :complete)
@@ -145,7 +145,7 @@ class GameSessionsController < ApplicationController
       })
     else
       @game_session.add_winning_word!(winning_word) if winning_word
-      
+
       GameSessionChannel.broadcast_to(@game_session, {
         type: "word_revealed",
         word: winning_word,

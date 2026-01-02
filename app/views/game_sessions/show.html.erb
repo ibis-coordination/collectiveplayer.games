@@ -1,16 +1,16 @@
-<div class="game-container" 
-     data-controller="game" 
+<div class="game-container"
+     data-controller="game"
      data-game-code-value="<%= @game_session.code %>"
      data-game-player-token-value="<%= @current_player.token %>"
      data-game-status-value="<%= @game_session.status %>"
      data-game-time-limit-value="<%= @game_session.time_limit_seconds %>"
      data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>">
-  
+
   <% if @game_session.waiting? %>
     <!-- LOBBY VIEW -->
     <div class="lobby">
       <h1>👻 Word Ouija</h1>
-      
+
       <div class="session-info">
         <p>Share this link to invite players:</p>
         <div class="share-link">
@@ -67,10 +67,10 @@
         <% if @game_session.player_submitted?(@current_player) %>
           <p class="submitted-message">✓ Word submitted! Waiting for others...</p>
         <% else %>
-          <input type="text" 
-                 data-game-target="wordField" 
+          <input type="text"
+                 data-game-target="wordField"
                  data-action="keydown.enter->game#submitWord"
-                 placeholder="Enter your word..." 
+                 placeholder="Enter your word..."
                  autofocus>
           <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
         <% end %>
@@ -87,7 +87,7 @@
     <!-- COMPLETE VIEW -->
     <div class="game-complete">
       <h1>👻 Message Complete!</h1>
-      
+
       <div class="final-message" data-game-target="finalMessage">
         <%= @game_session.message.presence || "No message was created" %>
       </div>
