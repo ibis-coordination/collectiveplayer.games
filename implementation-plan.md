@@ -96,38 +96,38 @@ created_at: datetime
 
 ## Implementation Phases
 
-### Phase 1: Project Setup
-- [ ] Initialize Rails 8 app with SQLite
-- [ ] Configure Hotwire (Turbo + Stimulus)
-- [ ] Set up ActionCable
-- [ ] Create basic layout and minimal CSS
+### Phase 1: Project Setup ✅
+- [x] Initialize Rails 8 app with SQLite
+- [x] Configure Hotwire (Turbo + Stimulus)
+- [x] Set up ActionCable
+- [x] Create basic layout and minimal CSS
 
-### Phase 2: Session Management
-- [ ] Session model with code generation
-- [ ] Create session page (host sets time limit)
-- [ ] Session lobby page (shows join link, player list)
-- [ ] Join session flow (enter name, get token)
-- [ ] Player model and association
+### Phase 2: Session Management ✅
+- [x] Session model with code generation
+- [x] Create session page (host sets time limit)
+- [x] Session lobby page (shows join link, player list)
+- [x] Join session flow (enter name, get token)
+- [x] Player model and association
 
-### Phase 3: Game Loop - Backend
-- [ ] Word and Submission models
-- [ ] Round management logic:
+### Phase 3: Game Loop - Backend ✅
+- [x] Word and Submission models
+- [x] Round management logic:
   - Track current round number
   - Accept submissions
   - Detect round completion (all submitted or timeout)
   - Tally votes (case-insensitive)
   - Break ties randomly
   - Append winning word
-- [ ] End game logic (host ends or `END` wins)
-- [ ] ActionCable channels for realtime updates
+- [x] End game logic (host ends or `END` wins)
+- [x] ActionCable channels for realtime updates
 
-### Phase 4: Game Loop - Frontend
-- [ ] Active game view with Turbo Frames/Streams
-- [ ] Display current message
-- [ ] Word input form with Stimulus controller
-- [ ] Round timer display (Stimulus)
-- [ ] Realtime word reveal updates
-- [ ] Host "End Session" button
+### Phase 4: Game Loop - Frontend ✅
+- [x] Active game view with Turbo Frames/Streams
+- [x] Display current message
+- [x] Word input form with Stimulus controller
+- [x] Round timer display (Stimulus)
+- [x] Realtime word reveal updates
+- [x] Host "End Session" button
 
 ### Phase 5: Completion & Polish
 - [ ] Completion screen with final message

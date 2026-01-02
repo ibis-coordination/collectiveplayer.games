@@ -1,0 +1,100 @@
+<div class="game-container" 
+     data-controller="game" 
+     data-game-code-value="<%= @game_session.code %>"
+     data-game-player-token-value="<%= @current_player.token %>"
+     data-game-status-value="<%= @game_session.status %>"
+     data-game-time-limit-value="<%= @game_session.time_limit_seconds %>"
+     data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>">
+  
+  <% if @game_session.waiting? %>
+    <!-- LOBBY VIEW -->
+    <div class="lobby">
+      <h1>👻 Word Ouija</h1>
+      
+      <div class="session-info">
+        <p>Share this link to invite players:</p>
+        <div class="share-link">
+          <input type="text" readonly value="<%= request.base_url %><%= game_session_path(@game_session.code) %>" id="share-link">
+          <button onclick="navigator.clipboard.writeText(document.getElementById('share-link').value)" class="btn btn-small">Copy</button>
+        </div>
+        <p class="session-code">Session Code: <strong><%= @game_session.code %></strong></p>
+      </div>
+
+      <div class="players-list">
+        <h3>Players (<span data-game-target="playerCount"><%= @game_session.players.count %></span>)</h3>
+        <ul data-game-target="playerList">
+          <% @game_session.players.each do |player| %>
+            <li><%= player.name %><%= " (Host)" if player.host? %></li>
+          <% end %>
+        </ul>
+      </div>
+
+      <% if @game_session.time_limit_seconds %>
+        <p class="setting">⏱️ <%= @game_session.time_limit_seconds %> seconds per round</p>
+      <% else %>
+        <p class="setting">⏱️ No time limit</p>
+      <% end %>
+
+      <% if @current_player.host? %>
+        <% if @game_session.players.count >= 2 %>
+          <%= button_to "Start Game", start_game_session_path(@game_session.code), method: :post, class: "btn btn-primary btn-large" %>
+        <% else %>
+          <p class="waiting-message">Waiting for more players to join... (need at least 2)</p>
+        <% end %>
+      <% else %>
+        <p class="waiting-message">Waiting for the host to start the game...</p>
+      <% end %>
+    </div>
+
+  <% elsif @game_session.active? %>
+    <!-- ACTIVE GAME VIEW -->
+    <div class="game-active">
+      <div class="message-display" data-game-target="messageDisplay">
+        <% if @game_session.message.present? %>
+          <%= @game_session.message %>
+        <% else %>
+          <span class="placeholder">The message will appear here...</span>
+        <% end %>
+      </div>
+
+      <% if @game_session.time_limit_seconds %>
+        <div class="timer" data-game-target="timer">
+          <span data-game-target="timerValue">--</span>s
+        </div>
+      <% end %>
+
+      <div class="word-input" data-game-target="wordInput">
+        <% if @game_session.player_submitted?(@current_player) %>
+          <p class="submitted-message">✓ Word submitted! Waiting for others...</p>
+        <% else %>
+          <input type="text" 
+                 data-game-target="wordField" 
+                 data-action="keydown.enter->game#submitWord"
+                 placeholder="Enter your word..." 
+                 autofocus>
+          <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+        <% end %>
+      </div>
+
+      <% if @current_player.host? %>
+        <div class="host-controls">
+          <%= button_to "End Game", end_game_game_session_path(@game_session.code), method: :post, class: "btn btn-danger" %>
+        </div>
+      <% end %>
+    </div>
+
+  <% else %>
+    <!-- COMPLETE VIEW -->
+    <div class="game-complete">
+      <h1>👻 Message Complete!</h1>
+      
+      <div class="final-message" data-game-target="finalMessage">
+        <%= @game_session.message.presence || "No message was created" %>
+      </div>
+
+      <div class="actions">
+        <%= link_to "Create New Session", root_path, class: "btn btn-primary" %>
+      </div>
+    </div>
+  <% end %>
+</div>

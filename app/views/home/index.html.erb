@@ -1,0 +1,24 @@
+<div class="home-container">
+  <h1>👻 Word Ouija</h1>
+  <p class="subtitle">Collaboratively create a message, one word at a time</p>
+
+  <%= form_with url: game_sessions_path, method: :post, class: "create-form" do %>
+    <div class="form-group">
+      <label for="host_name">Your Name</label>
+      <input type="text" name="host_name" id="host_name" placeholder="Enter your name" required>
+    </div>
+
+    <div class="form-group">
+      <label for="time_limit_seconds">Time per Round</label>
+      <select name="time_limit_seconds" id="time_limit_seconds">
+        <option value="">Unlimited</option>
+        <option value="5" selected>5 seconds</option>
+        <option value="10">10 seconds</option>
+        <option value="30">30 seconds</option>
+        <option value="60">60 seconds</option>
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Create Session</button>
+  <% end %>
+</div>

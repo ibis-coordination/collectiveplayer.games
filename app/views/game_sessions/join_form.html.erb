@@ -1,0 +1,13 @@
+<div class="join-container">
+  <h1>👻 Word Ouija</h1>
+  <h2>Join Session: <%= @game_session.code %></h2>
+
+  <%= form_with url: join_game_session_path(@game_session.code), method: :post, class: "join-form" do %>
+    <div class="form-group">
+      <label for="name">Your Name</label>
+      <input type="text" name="name" id="name" placeholder="Enter your name" required autofocus>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Join Game</button>
+  <% end %>
+</div>
