@@ -14,6 +14,7 @@ class GameSessionChannel < ApplicationCable::Channel
   end
 
   def submit_word(data)
+    @game_session.reload # Ensure we have fresh data
     return unless @game_session&.active?
 
     player = find_player(data["player_token"])

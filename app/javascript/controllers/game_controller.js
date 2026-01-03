@@ -2,13 +2,14 @@ import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 
 export default class extends Controller {
-  static targets = ["messageDisplay", "timer", "timerValue", "wordInput", "wordField", "playerList", "playerCount", "finalMessage"]
+  static targets = ["messageDisplay", "timer", "timerValue", "wordInput", "wordField", "playerList", "playerCount", "finalMessage", "hostControls"]
   static values = {
     code: String,
     playerToken: String,
     status: String,
     timeLimit: Number,
-    roundStartedAt: String
+    roundStartedAt: String,
+    isHost: Boolean
   }
 
   connect() {
@@ -61,6 +62,15 @@ export default class extends Controller {
     }
     if (this.hasPlayerCountTarget) {
       this.playerCountTarget.textContent = count
+    }
+    // Show start button if host and enough players
+    if (this.isHostValue && count >= 2 && this.hasHostControlsTarget) {
+      this.hostControlsTarget.innerHTML = `
+        <form action="/game_sessions/${this.codeValue}/start" method="post">
+          <input type="hidden" name="authenticity_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
+          <button type="submit" class="btn btn-primary btn-large">Start Game</button>
+        </form>
+      `
     }
   }
 

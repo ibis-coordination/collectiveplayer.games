@@ -4,7 +4,8 @@
      data-game-player-token-value="<%= @current_player.token %>"
      data-game-status-value="<%= @game_session.status %>"
      data-game-time-limit-value="<%= @game_session.time_limit_seconds %>"
-     data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>">
+     data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>"
+     data-game-is-host-value="<%= @current_player.host? %>">
 
   <% if @game_session.waiting? %>
     <!-- LOBBY VIEW -->
@@ -36,11 +37,13 @@
       <% end %>
 
       <% if @current_player.host? %>
-        <% if @game_session.players.count >= 2 %>
-          <%= button_to "Start Game", start_game_session_path(@game_session.code), method: :post, class: "btn btn-primary btn-large" %>
-        <% else %>
-          <p class="waiting-message">Waiting for more players to join... (need at least 2)</p>
-        <% end %>
+        <div data-game-target="hostControls">
+          <% if @game_session.players.count >= 2 %>
+            <%= button_to "Start Game", start_game_session_path(@game_session.code), method: :post, class: "btn btn-primary btn-large" %>
+          <% else %>
+            <p class="waiting-message">Waiting for more players to join... (need at least 2)</p>
+          <% end %>
+        </div>
       <% else %>
         <p class="waiting-message">Waiting for the host to start the game...</p>
       <% end %>
