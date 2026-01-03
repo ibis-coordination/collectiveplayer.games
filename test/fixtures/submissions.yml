@@ -1,13 +1,2 @@
 # Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
-
-one:
-  game_session: one
-  player: one
-  round_number: 1
-  word: MyString
-
-two:
-  game_session: two
-  player: two
-  round_number: 1
-  word: MyString
+# Empty - tests create their own data
