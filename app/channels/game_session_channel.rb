@@ -19,19 +19,21 @@ class GameSessionChannel < ApplicationCable::Channel
 
     player = find_player(data["player_token"])
     return unless player
+
+    # Only players in the active group can submit
+    return unless player.group == @game_session.current_turn_group
     return if @game_session.player_submitted?(player)
 
     word = data["word"].to_s.strip
     return if word.blank?
 
-    @game_session.submissions.create!(
+    @game_session.current_message.submissions.create!(
       player: player,
-      round_number: @game_session.current_round,
       word: word
     )
 
-    # Check if all players have submitted
-    if @game_session.all_players_submitted?
+    # Check if all group players have submitted
+    if @game_session.all_group_players_submitted?
       process_round_completion
     end
   end
@@ -44,22 +46,44 @@ class GameSessionChannel < ApplicationCable::Channel
 
   def process_round_completion
     winning_word = @game_session.determine_winner
+    current_message = @game_session.current_message
 
     # Check for END keyword
     if winning_word&.downcase == "end"
-      @game_session.update!(status: :complete)
-      GameSessionChannel.broadcast_to(@game_session, {
-        type: "game_ended",
-        message: @game_session.message
-      })
+      # If message is empty (END is first word), end the entire game
+      if current_message.words.empty?
+        @game_session.update!(status: :complete)
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "game_ended",
+          conversation: @game_session.conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
+        })
+      else
+        # Message complete, switch turns
+        current_group = @game_session.current_turn_group
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "message_completed",
+          group_id: current_group.id,
+          group_name: current_group.name,
+          message_text: current_message.text
+        })
+
+        @game_session.switch_turn!
+        @game_session.start_new_message!
+
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "turn_switched",
+          active_group_id: @game_session.current_turn_group.id,
+          active_group_name: @game_session.current_turn_group.name
+        })
+      end
     else
       @game_session.add_winning_word!(winning_word) if winning_word
 
       GameSessionChannel.broadcast_to(@game_session, {
         type: "word_revealed",
         word: winning_word,
-        message: @game_session.message,
-        round: @game_session.current_round
+        group_id: @game_session.current_turn_group.id,
+        message_text: current_message.reload.text
       })
     end
   end

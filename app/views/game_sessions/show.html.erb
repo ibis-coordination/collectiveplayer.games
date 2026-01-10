@@ -5,12 +5,14 @@
      data-game-status-value="<%= @game_session.status %>"
      data-game-time-limit-value="<%= @game_session.time_limit_seconds %>"
      data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>"
-     data-game-is-host-value="<%= @current_player.host? %>">
+     data-game-is-host-value="<%= @current_player.host? %>"
+     data-game-player-group-id-value="<%= @current_player.group_id %>"
+     data-game-active-group-id-value="<%= @game_session.current_turn_group_id %>">
 
   <% if @game_session.waiting? %>
     <!-- LOBBY VIEW -->
     <div class="lobby">
-      <h1>👻 Word Ouija</h1>
+      <h1>Group Group Chat</h1>
 
       <div class="session-info">
         <p>Share this link to invite players:</p>
@@ -21,43 +23,113 @@
         <p class="session-code">Session Code: <strong><%= @game_session.code %></strong></p>
       </div>
 
-      <div class="players-list">
-        <h3>Players (<span data-game-target="playerCount"><%= @game_session.players.count %></span>)</h3>
-        <ul data-game-target="playerList">
-          <% @game_session.players.each do |player| %>
-            <li><%= player.name %><%= " (Host)" if player.host? %></li>
-          <% end %>
-        </ul>
+      <% if @game_session.time_limit_seconds %>
+        <p class="setting">Time limit: <%= @game_session.time_limit_seconds %> seconds per word</p>
+      <% else %>
+        <p class="setting">No time limit</p>
+      <% end %>
+
+      <!-- Group Selection -->
+      <div class="groups-container">
+        <% groups = @game_session.groups.includes(:players).to_a %>
+        <% 2.times do |i| %>
+          <% group = groups[i] %>
+          <div class="group-column" data-group-id="<%= group&.id %>">
+            <% if group %>
+              <div class="group-header">
+                <% if @current_player.group == group %>
+                  <input type="text"
+                         class="group-name-input"
+                         value="<%= group.name %>"
+                         data-action="blur->game#updateGroupName keydown.enter->game#updateGroupName"
+                         data-group-id="<%= group.id %>">
+                <% else %>
+                  <h3 class="group-name"><%= group.name %></h3>
+                <% end %>
+              </div>
+              <ul class="group-players">
+                <% group.players.each do |player| %>
+                  <li>
+                    <%= player.name %><%= " (Host)" if player.host? %><%= " (You)" if player == @current_player %>
+                  </li>
+                <% end %>
+              </ul>
+              <% if @current_player.group != group %>
+                <%= button_to "Join #{group.name}", join_group_game_session_path(@game_session.code, group_id: group.id), method: :post, class: "btn btn-secondary" %>
+              <% else %>
+                <p class="in-group-label">You're in this group</p>
+              <% end %>
+            <% else %>
+              <div class="group-header">
+                <h3 class="group-name empty">Group <%= i + 1 %></h3>
+              </div>
+              <p class="empty-group">No players yet</p>
+              <%= button_to "Create & Join Group", join_group_game_session_path(@game_session.code, group_id: "new"), method: :post, class: "btn btn-primary" %>
+            <% end %>
+          </div>
+        <% end %>
       </div>
 
-      <% if @game_session.time_limit_seconds %>
-        <p class="setting">⏱️ <%= @game_session.time_limit_seconds %> seconds per round</p>
-      <% else %>
-        <p class="setting">⏱️ No time limit</p>
+      <!-- Ungrouped Players -->
+      <% ungrouped = @game_session.players.where(group: nil) %>
+      <% if ungrouped.any? %>
+        <div class="ungrouped-players">
+          <h4>Waiting to join a group:</h4>
+          <ul>
+            <% ungrouped.each do |player| %>
+              <li><%= player.name %><%= " (Host)" if player.host? %><%= " (You)" if player == @current_player %></li>
+            <% end %>
+          </ul>
+        </div>
       <% end %>
 
       <% if @current_player.host? %>
-        <div data-game-target="hostControls">
-          <% if @game_session.players.count >= 2 %>
+        <div data-game-target="hostControls" class="host-controls-lobby">
+          <% if @game_session.groups.count >= 2 && @game_session.groups.all? { |g| g.players.any? } %>
             <%= button_to "Start Game", start_game_session_path(@game_session.code), method: :post, class: "btn btn-primary btn-large" %>
           <% else %>
-            <p class="waiting-message">Waiting for more players to join... (need at least 2)</p>
+            <p class="waiting-message">Need 2 groups with at least 1 player each to start</p>
           <% end %>
         </div>
       <% else %>
-        <p class="waiting-message">Waiting for the host to start the game...</p>
+        <% if @current_player.group.nil? %>
+          <p class="waiting-message">Join a group to play!</p>
+        <% else %>
+          <p class="waiting-message">Waiting for the host to start the game...</p>
+        <% end %>
       <% end %>
     </div>
 
   <% elsif @game_session.active? %>
     <!-- ACTIVE GAME VIEW -->
     <div class="game-active">
-      <div class="message-display" data-game-target="messageDisplay">
-        <% if @game_session.message.present? %>
-          <%= @game_session.message %>
+      <div class="turn-indicator" data-game-target="turnIndicator">
+        <% if @game_session.current_turn_group == @current_player.group %>
+          <strong>Your group's turn!</strong> Compose a message together.
         <% else %>
-          <span class="placeholder">The message will appear here...</span>
+          Waiting for <strong><%= @game_session.current_turn_group&.name %></strong> to compose their message...
         <% end %>
+      </div>
+
+      <!-- Chat Transcript -->
+      <div class="chat-transcript" data-game-target="chatTranscript">
+        <% @game_session.conversation.each do |msg| %>
+          <% next if msg[:text].blank? %>
+          <div class="chat-message <%= msg[:group] == @current_player.group ? 'own-group' : 'other-group' %>">
+            <span class="group-label"><%= msg[:group].name %>:</span>
+            <span class="message-text"><%= msg[:text] %></span>
+          </div>
+        <% end %>
+      </div>
+
+      <!-- Current Message Being Built -->
+      <div class="current-message-area">
+        <div class="current-message" data-game-target="currentMessage">
+          <span class="group-label"><%= @game_session.current_turn_group&.name %>:</span>
+          <span class="message-text" data-game-target="messageText">
+            <%= @game_session.current_message&.text.presence || "..." %>
+          </span>
+        </div>
       </div>
 
       <% if @game_session.time_limit_seconds %>
@@ -66,18 +138,25 @@
         </div>
       <% end %>
 
-      <div class="word-input" data-game-target="wordInput">
-        <% if @game_session.player_submitted?(@current_player) %>
-          <p class="submitted-message">✓ Word submitted! Waiting for others...</p>
-        <% else %>
-          <input type="text"
-                 data-game-target="wordField"
-                 data-action="keydown.enter->game#submitWord"
-                 placeholder="Enter your word..."
-                 autofocus>
-          <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
-        <% end %>
-      </div>
+      <% if @game_session.current_turn_group == @current_player.group %>
+        <div class="word-input" data-game-target="wordInput">
+          <% if @game_session.player_submitted?(@current_player) %>
+            <p class="submitted-message">Word submitted! Waiting for teammates...</p>
+          <% else %>
+            <input type="text"
+                   data-game-target="wordField"
+                   data-action="keydown.enter->game#submitWord"
+                   placeholder="Enter your word..."
+                   autofocus>
+            <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+            <p class="hint">Type "END" to finish your message</p>
+          <% end %>
+        </div>
+      <% else %>
+        <div class="waiting-turn">
+          <p>Watch the other group compose their message...</p>
+        </div>
+      <% end %>
 
       <% if @current_player.host? %>
         <div class="host-controls">
@@ -89,10 +168,19 @@
   <% else %>
     <!-- COMPLETE VIEW -->
     <div class="game-complete">
-      <h1>👻 Message Complete!</h1>
+      <h1>Conversation Complete!</h1>
 
-      <div class="final-message" data-game-target="finalMessage">
-        <%= @game_session.message.presence || "No message was created" %>
+      <div class="final-conversation" data-game-target="finalConversation">
+        <% @game_session.conversation.each do |msg| %>
+          <% next if msg[:text].blank? %>
+          <div class="chat-message">
+            <span class="group-label"><%= msg[:group].name %>:</span>
+            <span class="message-text"><%= msg[:text] %></span>
+          </div>
+        <% end %>
+        <% if @game_session.conversation.empty? || @game_session.conversation.all? { |m| m[:text].blank? } %>
+          <p class="empty-conversation">No conversation was created</p>
+        <% end %>
       </div>
 
       <div class="actions">

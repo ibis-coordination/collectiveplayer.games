@@ -2,14 +2,16 @@ import { Controller } from "@hotwired/stimulus"
 import { createConsumer } from "@rails/actioncable"
 
 export default class extends Controller {
-  static targets = ["messageDisplay", "timer", "timerValue", "wordInput", "wordField", "playerList", "playerCount", "finalMessage", "hostControls"]
+  static targets = ["messageDisplay", "timer", "timerValue", "wordInput", "wordField", "playerList", "playerCount", "finalMessage", "hostControls", "chatTranscript", "currentMessage", "messageText", "turnIndicator"]
   static values = {
     code: String,
     playerToken: String,
     status: String,
     timeLimit: Number,
     roundStartedAt: String,
-    isHost: Boolean
+    isHost: Boolean,
+    playerGroupId: Number,
+    activeGroupId: Number
   }
 
   connect() {
@@ -40,51 +42,55 @@ export default class extends Controller {
   handleMessage(data) {
     switch(data.type) {
       case "player_joined":
-        this.addPlayer(data.player_name, data.player_count)
+        // Reload to show updated player list
+        window.location.reload()
+        break
+      case "player_changed_group":
+        // Reload to show updated group membership
+        window.location.reload()
+        break
+      case "group_name_changed":
+        this.updateGroupNameDisplay(data.group_id, data.name)
         break
       case "game_started":
         window.location.reload()
         break
       case "word_revealed":
-        this.revealWord(data.word, data.message)
+        this.revealWord(data.word, data.message_text, data.group_id)
+        break
+      case "message_completed":
+        this.messageCompleted(data.group_id, data.group_name, data.message_text)
+        break
+      case "turn_switched":
+        this.switchTurn(data.active_group_id, data.active_group_name)
         break
       case "game_ended":
-        this.endGame(data.message)
+        window.location.reload()
         break
     }
   }
 
-  addPlayer(name, count) {
-    if (this.hasPlayerListTarget) {
-      const li = document.createElement("li")
-      li.textContent = name
-      this.playerListTarget.appendChild(li)
-    }
-    if (this.hasPlayerCountTarget) {
-      this.playerCountTarget.textContent = count
-    }
-    // Show start button if host and enough players
-    if (this.isHostValue && count >= 2 && this.hasHostControlsTarget) {
-      this.hostControlsTarget.innerHTML = `
-        <form action="/game_sessions/${this.codeValue}/start" method="post">
-          <input type="hidden" name="authenticity_token" value="${document.querySelector('meta[name="csrf-token"]').content}">
-          <button type="submit" class="btn btn-primary btn-large">Start Game</button>
-        </form>
-      `
-    }
+  updateGroupNameDisplay(groupId, name) {
+    // Update group name displays on the page
+    const groupColumns = document.querySelectorAll(`[data-group-id="${groupId}"]`)
+    groupColumns.forEach(col => {
+      const nameEl = col.querySelector('.group-name')
+      if (nameEl) nameEl.textContent = name
+    })
   }
 
-  revealWord(word, message) {
-    if (this.hasMessageDisplayTarget) {
-      this.messageDisplayTarget.innerHTML = message || '<span class="placeholder">The message will appear here...</span>'
+  revealWord(word, messageText, groupId) {
+    // Update the current message text
+    if (this.hasMessageTextTarget) {
+      this.messageTextTarget.textContent = messageText || "..."
 
       // Flash effect
-      this.messageDisplayTarget.classList.add("flash")
-      setTimeout(() => this.messageDisplayTarget.classList.remove("flash"), 500)
+      this.messageTextTarget.classList.add("flash")
+      setTimeout(() => this.messageTextTarget.classList.remove("flash"), 500)
     }
 
-    // Reset word input
-    if (this.hasWordInputTarget) {
+    // Reset word input if it's our turn
+    if (this.playerGroupIdValue === groupId && this.hasWordInputTarget) {
       this.wordInputTarget.innerHTML = `
         <input type="text"
                data-game-target="wordField"
@@ -92,6 +98,7 @@ export default class extends Controller {
                placeholder="Enter your word..."
                autofocus>
         <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+        <p class="hint">Type "END" to finish your message</p>
       `
       // Focus the new input
       const newInput = this.wordInputTarget.querySelector("input")
@@ -105,8 +112,72 @@ export default class extends Controller {
     }
   }
 
-  endGame(message) {
-    window.location.reload()
+  messageCompleted(groupId, groupName, messageText) {
+    // Add completed message to chat transcript
+    if (this.hasChatTranscriptTarget && messageText) {
+      const isOwnGroup = this.playerGroupIdValue === groupId
+      const div = document.createElement("div")
+      div.className = `chat-message ${isOwnGroup ? 'own-group' : 'other-group'}`
+      div.innerHTML = `
+        <span class="group-label">${groupName}:</span>
+        <span class="message-text">${messageText}</span>
+      `
+      this.chatTranscriptTarget.appendChild(div)
+    }
+  }
+
+  switchTurn(activeGroupId, activeGroupName) {
+    this.activeGroupIdValue = activeGroupId
+    const isOurTurn = this.playerGroupIdValue === activeGroupId
+
+    // Update turn indicator
+    if (this.hasTurnIndicatorTarget) {
+      if (isOurTurn) {
+        this.turnIndicatorTarget.innerHTML = `<strong>Your group's turn!</strong> Compose a message together.`
+      } else {
+        this.turnIndicatorTarget.innerHTML = `Waiting for <strong>${activeGroupName}</strong> to compose their message...`
+      }
+    }
+
+    // Update current message label
+    if (this.hasCurrentMessageTarget) {
+      const labelEl = this.currentMessageTarget.querySelector('.group-label')
+      if (labelEl) labelEl.textContent = `${activeGroupName}:`
+    }
+
+    // Clear current message text
+    if (this.hasMessageTextTarget) {
+      this.messageTextTarget.textContent = "..."
+    }
+
+    // Show/hide word input
+    if (this.hasWordInputTarget) {
+      if (isOurTurn) {
+        this.wordInputTarget.innerHTML = `
+          <input type="text"
+                 data-game-target="wordField"
+                 data-action="keydown.enter->game#submitWord"
+                 placeholder="Enter your word..."
+                 autofocus>
+          <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+          <p class="hint">Type "END" to finish your message</p>
+        `
+        const newInput = this.wordInputTarget.querySelector("input")
+        if (newInput) newInput.focus()
+      } else {
+        this.wordInputTarget.innerHTML = `
+          <div class="waiting-turn">
+            <p>Watch the other group compose their message...</p>
+          </div>
+        `
+      }
+    }
+
+    // Restart timer
+    if (this.timeLimitValue > 0) {
+      this.roundStartedAtValue = new Date().toISOString()
+      this.startTimer()
+    }
   }
 
   submitWord() {
@@ -123,8 +194,30 @@ export default class extends Controller {
 
     // Update UI to show submitted
     if (this.hasWordInputTarget) {
-      this.wordInputTarget.innerHTML = '<p class="submitted-message">✓ Word submitted! Waiting for others...</p>'
+      this.wordInputTarget.innerHTML = '<p class="submitted-message">Word submitted! Waiting for teammates...</p>'
     }
+  }
+
+  updateGroupName(event) {
+    // Prevent form submission on enter
+    if (event.type === "keydown") {
+      event.target.blur()
+      return
+    }
+
+    const groupId = event.target.dataset.groupId
+    const newName = event.target.value.trim()
+    if (!newName) return
+
+    // Send update via fetch
+    fetch(`/game_sessions/${this.codeValue}/update_group_name`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
+      },
+      body: `group_id=${groupId}&name=${encodeURIComponent(newName)}`
+    })
   }
 
   startTimer() {

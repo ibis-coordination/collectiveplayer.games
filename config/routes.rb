@@ -12,6 +12,8 @@ Rails.application.routes.draw do
   resources :game_sessions, only: [:create, :show], param: :code do
     member do
       post :join
+      post :join_group
+      post :update_group_name
       post :start
       post :end_game
       post :submit_word

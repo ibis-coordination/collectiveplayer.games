@@ -1,6 +1,6 @@
 class GameSessionsController < ApplicationController
-  before_action :set_game_session, only: [:show, :join, :start, :end_game, :submit_word]
-  before_action :set_current_player, only: [:show, :start, :end_game, :submit_word]
+  before_action :set_game_session, only: [:show, :join, :join_group, :update_group_name, :start, :end_game, :submit_word]
+  before_action :set_current_player, only: [:show, :join_group, :update_group_name, :start, :end_game, :submit_word]
 
   def create
     @game_session = GameSession.new(game_session_params)
@@ -55,19 +55,100 @@ class GameSessionsController < ApplicationController
     redirect_to game_session_path(@game_session.code)
   end
 
+  def join_group
+    unless @current_player
+      redirect_to game_session_path(@game_session.code), alert: "You must join the session first" and return
+    end
+
+    group_id = params[:group_id]
+
+    # Create new group or find existing
+    if group_id == "new"
+      if @game_session.groups.count >= 2
+        redirect_to game_session_path(@game_session.code), alert: "Maximum 2 groups allowed" and return
+      end
+      group = @game_session.groups.create!(name: "Group #{@game_session.groups.count + 1}")
+    else
+      group = @game_session.groups.find_by(id: group_id)
+      unless group
+        redirect_to game_session_path(@game_session.code), alert: "Group not found" and return
+      end
+    end
+
+    old_group = @current_player.group
+    @current_player.update!(group: group)
+
+    # Broadcast group change
+    GameSessionChannel.broadcast_to(@game_session, {
+      type: "player_changed_group",
+      player_name: @current_player.name,
+      old_group_id: old_group&.id,
+      new_group_id: group.id,
+      new_group_name: group.name
+    })
+
+    redirect_to game_session_path(@game_session.code)
+  end
+
+  def update_group_name
+    unless @current_player
+      head :unauthorized and return
+    end
+
+    group = @game_session.groups.find_by(id: params[:group_id])
+    unless group
+      head :not_found and return
+    end
+
+    # Only allow players in that group to rename it
+    unless @current_player.group == group
+      head :forbidden and return
+    end
+
+    new_name = params[:name].to_s.strip
+    if new_name.blank?
+      head :unprocessable_entity and return
+    end
+
+    group.update!(name: new_name)
+
+    # Broadcast name change
+    GameSessionChannel.broadcast_to(@game_session, {
+      type: "group_name_changed",
+      group_id: group.id,
+      name: group.name
+    })
+
+    head :ok
+  end
+
   def start
     unless @current_player&.host?
       redirect_to game_session_path(@game_session.code), alert: "Only the host can start the game" and return
     end
 
-    if @game_session.players.count < 2
-      redirect_to game_session_path(@game_session.code), alert: "Need at least 2 players to start" and return
+    if @game_session.groups.count < 2
+      redirect_to game_session_path(@game_session.code), alert: "Need 2 groups to start" and return
     end
 
-    @game_session.update!(status: :active, round_started_at: Time.current)
+    @game_session.groups.each do |group|
+      if group.players.count < 1
+        redirect_to game_session_path(@game_session.code), alert: "Each group needs at least 1 player" and return
+      end
+    end
+
+    # Randomly select which group goes first
+    first_group = @game_session.groups.sample
+    @game_session.update!(
+      status: :active,
+      current_turn_group: first_group,
+      round_started_at: Time.current
+    )
 
     GameSessionChannel.broadcast_to(@game_session, {
-      type: "game_started"
+      type: "game_started",
+      first_group_id: first_group.id,
+      first_group_name: first_group.name
     })
 
     redirect_to game_session_path(@game_session.code)
@@ -82,7 +163,7 @@ class GameSessionsController < ApplicationController
 
     GameSessionChannel.broadcast_to(@game_session, {
       type: "game_ended",
-      message: @game_session.message
+      conversation: @game_session.conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
     })
 
     redirect_to game_session_path(@game_session.code)
@@ -91,6 +172,11 @@ class GameSessionsController < ApplicationController
   def submit_word
     unless @game_session.active?
       head :unprocessable_entity and return
+    end
+
+    # Only players in the active group can submit
+    unless @current_player.group == @game_session.current_turn_group
+      head :forbidden and return
     end
 
     if @game_session.player_submitted?(@current_player)
@@ -102,14 +188,13 @@ class GameSessionsController < ApplicationController
       head :unprocessable_entity and return
     end
 
-    @game_session.submissions.create!(
+    @game_session.current_message.submissions.create!(
       player: @current_player,
-      round_number: @game_session.current_round,
       word: word
     )
 
-    # Check if all players have submitted
-    if @game_session.all_players_submitted?
+    # Check if all group players have submitted
+    if @game_session.all_group_players_submitted?
       process_round_completion
     end
 
@@ -135,22 +220,44 @@ class GameSessionsController < ApplicationController
 
   def process_round_completion
     winning_word = @game_session.determine_winner
+    current_message = @game_session.current_message
 
     # Check for END keyword
     if winning_word&.downcase == "end"
-      @game_session.update!(status: :complete)
-      GameSessionChannel.broadcast_to(@game_session, {
-        type: "game_ended",
-        message: @game_session.message
-      })
+      # If message is empty (END is first word), end the entire game
+      if current_message.words.empty?
+        @game_session.update!(status: :complete)
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "game_ended",
+          conversation: @game_session.conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
+        })
+      else
+        # Message complete, switch turns
+        current_group = @game_session.current_turn_group
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "message_completed",
+          group_id: current_group.id,
+          group_name: current_group.name,
+          message_text: current_message.text
+        })
+
+        @game_session.switch_turn!
+        @game_session.start_new_message!
+
+        GameSessionChannel.broadcast_to(@game_session, {
+          type: "turn_switched",
+          active_group_id: @game_session.current_turn_group.id,
+          active_group_name: @game_session.current_turn_group.name
+        })
+      end
     else
       @game_session.add_winning_word!(winning_word) if winning_word
 
       GameSessionChannel.broadcast_to(@game_session, {
         type: "word_revealed",
         word: winning_word,
-        message: @game_session.message,
-        round: @game_session.current_round
+        group_id: @game_session.current_turn_group.id,
+        message_text: current_message.reload.text
       })
     end
   end
