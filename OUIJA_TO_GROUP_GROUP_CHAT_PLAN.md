@@ -158,44 +158,44 @@ created_at: datetime
 
 ## Implementation Phases
 
-### Phase 1: Data Model Migration
-- [ ] Create Group model and migration
-- [ ] Add group_id to Player
-- [ ] Create Message model (group's complete message)
-- [ ] Update Word to belong to Message instead of GameSession
-- [ ] Update Submission to reference Message
-- [ ] Update GameSession: replace current_round with current_turn_group_id
+### Phase 1: Data Model Migration ✅
+- [x] Create Group model and migration
+- [x] Add group_id to Player
+- [x] Create Message model (group's complete message)
+- [x] Update Word to belong to Message instead of GameSession
+- [x] Update Submission to reference Message
+- [x] Update GameSession: replace current_round with current_turn_group_id
 
-### Phase 2: Lobby - Group Selection
-- [ ] UI for two group columns
-- [ ] Join group functionality
-- [ ] Group name input/editing
-- [ ] Update player list to show group membership
-- [ ] Start game validation (both groups have players)
+### Phase 2: Lobby - Group Selection ✅
+- [x] UI for two group columns
+- [x] Join group functionality
+- [x] Group name input/editing
+- [x] Update player list to show group membership
+- [x] Start game validation (both groups have players)
 
-### Phase 3: Turn-Based Game Loop
-- [ ] Track active group (whose turn it is)
-- [ ] Only accept submissions from active group
-- [ ] Create new Message when turn starts
-- [ ] Append words to current Message
-- [ ] Detect "END" → complete message, switch turns
-- [ ] Detect conversation-ending "END" (message is just "END")
+### Phase 3: Turn-Based Game Loop ✅
+- [x] Track active group (whose turn it is)
+- [x] Only accept submissions from active group
+- [x] Create new Message when turn starts
+- [x] Append words to current Message
+- [x] Detect "END" → complete message, switch turns
+- [x] Detect conversation-ending "END" (message is just "END")
 
-### Phase 4: Real-Time UI Updates
-- [ ] Update game_controller.js for two-group display
-- [ ] Chat transcript with completed messages
-- [ ] Current message builder (visible to all)
-- [ ] Conditional input (only active group)
-- [ ] Group labels and color coding
+### Phase 4: Real-Time UI Updates ✅
+- [x] Update game_controller.js for two-group display
+- [x] Chat transcript with completed messages
+- [x] Current message builder (visible to all)
+- [x] Conditional input (only active group)
+- [x] Group labels and color coding
 
-### Phase 5: Polish
-- [ ] Completion screen with full transcript
-- [ ] Handle edge cases (player leaves, group becomes empty)
-- [ ] Update tests for new flow
+### Phase 5: Polish ✅
+- [x] Completion screen with full transcript
+- [x] Update tests for new flow
+- [ ] Handle edge cases (player leaves mid-game) - deferred
 
 ---
 
 ## Open Items / Future Considerations
-- What if a group becomes empty mid-conversation? (Auto-forfeit? Pause?)
+- What if a group becomes empty mid-conversation? (For MVP: host can end game manually)
 - Should there be a time limit per message (not just per word)?
 - Spectator mode for non-players?
