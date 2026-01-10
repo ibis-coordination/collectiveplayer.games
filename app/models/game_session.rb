@@ -1,7 +1,8 @@
 class GameSession < ApplicationRecord
   has_many :players, dependent: :destroy
-  has_many :words, dependent: :destroy
-  has_many :submissions, dependent: :destroy
+  has_many :groups, dependent: :destroy
+  has_many :messages, dependent: :destroy
+  belongs_to :current_turn_group, class_name: 'Group', optional: true
 
   enum :status, { waiting: 0, active: 1, complete: 2 }
 
@@ -14,36 +15,75 @@ class GameSession < ApplicationRecord
   # Characters for code generation (excluding ambiguous: 0, O, I, L, 1)
   CODE_CHARS = (('A'..'Z').to_a + ('2'..'9').to_a - ['O', 'I']).freeze
 
-  def message
-    words.order(:position).pluck(:text).join(' ')
+  # Returns the full conversation as an array of { group:, text: } hashes
+  def conversation
+    messages.includes(:group, :words).order(:position).map do |msg|
+      { group: msg.group, text: msg.text }
+    end
   end
 
-  def current_round_submissions
-    submissions.where(round_number: current_round)
+  # Returns the current message being composed (or creates one if needed)
+  def current_message
+    return nil unless current_turn_group
+
+    # Find the most recent message for the current group, or create one
+    existing = messages.where(group: current_turn_group).order(:position).last
+    return existing if existing
+
+    messages.create!(group: current_turn_group, position: messages.count + 1)
   end
 
-  def all_players_submitted?
-    current_round_submissions.count >= players.count
+  # Check if all players in the active group have submitted for current message
+  def all_group_players_submitted?
+    return false unless current_turn_group && current_message
+
+    current_message.submissions.count >= current_turn_group.players.count
   end
 
+  # Check if a specific player has submitted for the current message
   def player_submitted?(player)
-    current_round_submissions.exists?(player: player)
+    return false unless current_message
+
+    current_message.submissions.exists?(player: player)
   end
 
+  # Determine the winning word from current message submissions
   def determine_winner
-    votes = current_round_submissions.group_by { |s| s.word.downcase.strip }
+    return nil unless current_message
+
+    votes = current_message.submissions.group_by { |s| s.word.downcase.strip }
     return nil if votes.empty?
 
     max_votes = votes.values.map(&:size).max
     winners = votes.select { |_, v| v.size == max_votes }.keys
-    winners.sample # Random tie-breaker, returns the original casing from first submission
+    winners.sample # Random tie-breaker
   end
 
+  # Add winning word to current message
   def add_winning_word!(word_text)
-    return if word_text.blank?
+    return if word_text.blank? || current_message.nil?
 
-    words.create!(position: words.count + 1, text: word_text)
-    increment!(:current_round)
+    current_message.words.create!(
+      position: current_message.words.count + 1,
+      text: word_text
+    )
+    update!(round_started_at: Time.current)
+  end
+
+  # Switch turn to the other group
+  def switch_turn!
+    other_group = groups.where.not(id: current_turn_group_id).first
+    update!(current_turn_group: other_group, round_started_at: Time.current)
+  end
+
+  # Start a new message for the current group (called after END)
+  def start_new_message!
+    return unless current_turn_group
+
+    messages.create!(
+      group: current_turn_group,
+      position: messages.count + 1
+    )
     update!(round_started_at: Time.current)
   end
 

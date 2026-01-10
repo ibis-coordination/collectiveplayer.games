@@ -1,10 +1,9 @@
 class Submission < ApplicationRecord
-  belongs_to :game_session
+  belongs_to :message
   belongs_to :player
 
   validates :word, presence: true
-  validates :round_number, presence: true, numericality: { greater_than: 0 }
-  validates :player_id, uniqueness: { scope: [:game_session_id, :round_number], message: "has already submitted for this round" }
+  validates :player_id, uniqueness: { scope: :message_id, message: "has already submitted for this message" }
 
   before_validation :normalize_word
 

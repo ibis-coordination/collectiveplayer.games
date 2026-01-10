@@ -1,5 +1,6 @@
 class Player < ApplicationRecord
   belongs_to :game_session
+  belongs_to :group, optional: true
   has_many :submissions, dependent: :destroy
 
   before_create :generate_token, unless: -> { token.present? }

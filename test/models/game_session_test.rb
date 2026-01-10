@@ -22,85 +22,116 @@ class GameSessionTest < ActiveSupport::TestCase
     assert session.waiting?
   end
 
-  test "defaults to round 1" do
+  test "defaults to no current turn group" do
     session = GameSession.create!
 
-    assert_equal 1, session.current_round
+    assert_nil session.current_turn_group
   end
 
-  test "message returns words joined by spaces in position order" do
+  test "conversation returns messages with group info" do
     session = GameSession.create!
-    session.words.create!(position: 2, text: "world")
-    session.words.create!(position: 1, text: "hello")
+    group1 = session.groups.create!(name: "Team A")
+    group2 = session.groups.create!(name: "Team B")
 
-    assert_equal "hello world", session.message
+    msg1 = session.messages.create!(group: group1, position: 1)
+    msg1.words.create!(position: 1, text: "hello")
+    msg1.words.create!(position: 2, text: "world")
+
+    msg2 = session.messages.create!(group: group2, position: 2)
+    msg2.words.create!(position: 1, text: "hi")
+
+    conversation = session.conversation
+    assert_equal 2, conversation.length
+    assert_equal "hello world", conversation[0][:text]
+    assert_equal group1, conversation[0][:group]
+    assert_equal "hi", conversation[1][:text]
+    assert_equal group2, conversation[1][:group]
   end
 
-  test "message returns empty string when no words" do
+  test "conversation returns empty array when no messages" do
     session = GameSession.create!
 
-    assert_equal "", session.message
+    assert_equal [], session.conversation
   end
 
-  test "all_players_submitted? returns true when all players have submitted" do
+  test "all_group_players_submitted? returns true when all group players have submitted" do
     session = GameSession.create!
-    player1 = session.players.create!(name: "Player 1")
-    player2 = session.players.create!(name: "Player 2")
+    group = session.groups.create!(name: "Team A")
+    player1 = session.players.create!(name: "Player 1", group: group)
+    player2 = session.players.create!(name: "Player 2", group: group)
+    session.update!(current_turn_group: group)
 
-    session.submissions.create!(player: player1, round_number: 1, word: "hello")
-    session.submissions.create!(player: player2, round_number: 1, word: "world")
+    message = session.current_message
+    message.submissions.create!(player: player1, word: "hello")
+    message.submissions.create!(player: player2, word: "world")
 
-    assert session.all_players_submitted?
+    assert session.all_group_players_submitted?
   end
 
-  test "all_players_submitted? returns false when not all players have submitted" do
+  test "all_group_players_submitted? returns false when not all group players have submitted" do
     session = GameSession.create!
-    player1 = session.players.create!(name: "Player 1")
-    player2 = session.players.create!(name: "Player 2")
+    group = session.groups.create!(name: "Team A")
+    player1 = session.players.create!(name: "Player 1", group: group)
+    player2 = session.players.create!(name: "Player 2", group: group)
+    session.update!(current_turn_group: group)
 
-    session.submissions.create!(player: player1, round_number: 1, word: "hello")
+    message = session.current_message
+    message.submissions.create!(player: player1, word: "hello")
 
-    assert_not session.all_players_submitted?
+    assert_not session.all_group_players_submitted?
   end
 
-  test "player_submitted? returns true for player who submitted current round" do
+  test "player_submitted? returns true for player who submitted current message" do
     session = GameSession.create!
-    player = session.players.create!(name: "Player 1")
-    session.submissions.create!(player: player, round_number: 1, word: "hello")
+    group = session.groups.create!(name: "Team A")
+    player = session.players.create!(name: "Player 1", group: group)
+    session.update!(current_turn_group: group)
+
+    message = session.current_message
+    message.submissions.create!(player: player, word: "hello")
 
     assert session.player_submitted?(player)
   end
 
-  test "player_submitted? returns false for player who has not submitted current round" do
+  test "player_submitted? returns false for player who has not submitted current message" do
     session = GameSession.create!
-    player = session.players.create!(name: "Player 1")
+    group = session.groups.create!(name: "Team A")
+    player = session.players.create!(name: "Player 1", group: group)
+    session.update!(current_turn_group: group)
+    session.current_message # Ensure message is created
 
     assert_not session.player_submitted?(player)
   end
 
-  test "player_submitted? checks current round not previous rounds" do
+  test "player_submitted? checks current message not previous messages" do
     session = GameSession.create!
-    player = session.players.create!(name: "Player 1")
+    group = session.groups.create!(name: "Team A")
+    player = session.players.create!(name: "Player 1", group: group)
+    session.update!(current_turn_group: group)
 
-    # Submit for round 1
-    session.submissions.create!(player: player, round_number: 1, word: "hello")
+    # Submit for first message
+    first_message = session.current_message
+    first_message.submissions.create!(player: player, word: "hello")
 
-    # Advance to round 2
-    session.update!(current_round: 2)
+    # Create new message (simulating turn switch and return)
+    session.start_new_message!
 
-    # Player has not submitted for round 2 yet
+    # Player has not submitted for new message yet
     assert_not session.player_submitted?(player)
   end
 
   test "determine_winner returns word with most votes (case-insensitive)" do
     session = GameSession.create!
-    player1 = session.players.create!(name: "Player 1")
-    player2 = session.players.create!(name: "Player 2")
-    player3 = session.players.create!(name: "Player 3")
+    group = session.groups.create!(name: "Team A")
+    player1 = session.players.create!(name: "Player 1", group: group)
+    player2 = session.players.create!(name: "Player 2", group: group)
+    player3 = session.players.create!(name: "Player 3", group: group)
+    session.update!(current_turn_group: group)
 
-    session.submissions.create!(player: player1, round_number: 1, word: "Hello")
-    session.submissions.create!(player: player2, round_number: 1, word: "hello")
-    session.submissions.create!(player: player3, round_number: 1, word: "world")
+    message = session.current_message
+    message.submissions.create!(player: player1, word: "Hello")
+    message.submissions.create!(player: player2, word: "hello")
+    message.submissions.create!(player: player3, word: "world")
 
     # "hello" has 2 votes, "world" has 1
     assert_equal "hello", session.determine_winner
@@ -108,35 +139,69 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "determine_winner breaks ties randomly" do
     session = GameSession.create!
-    player1 = session.players.create!(name: "Player 1")
-    player2 = session.players.create!(name: "Player 2")
+    group = session.groups.create!(name: "Team A")
+    player1 = session.players.create!(name: "Player 1", group: group)
+    player2 = session.players.create!(name: "Player 2", group: group)
+    session.update!(current_turn_group: group)
 
-    session.submissions.create!(player: player1, round_number: 1, word: "hello")
-    session.submissions.create!(player: player2, round_number: 1, word: "world")
+    message = session.current_message
+    message.submissions.create!(player: player1, word: "hello")
+    message.submissions.create!(player: player2, word: "world")
 
     # Both have 1 vote, should return one of them
     winner = session.determine_winner
     assert_includes ["hello", "world"], winner
   end
 
-  test "add_winning_word! creates word and increments round" do
+  test "add_winning_word! creates word on current message" do
     session = GameSession.create!(round_started_at: Time.current)
+    group = session.groups.create!(name: "Team A")
+    session.update!(current_turn_group: group)
 
     session.add_winning_word!("hello")
 
-    assert_equal 1, session.words.count
-    assert_equal "hello", session.words.first.text
-    assert_equal 1, session.words.first.position
-    assert_equal 2, session.current_round
+    message = session.current_message
+    assert_equal 1, message.words.count
+    assert_equal "hello", message.words.first.text
+    assert_equal 1, message.words.first.position
   end
 
   test "add_winning_word! sets correct position for subsequent words" do
     session = GameSession.create!(round_started_at: Time.current)
+    group = session.groups.create!(name: "Team A")
+    session.update!(current_turn_group: group)
 
     session.add_winning_word!("hello")
     session.add_winning_word!("world")
 
-    assert_equal 2, session.words.count
-    assert_equal 2, session.words.find_by(text: "world").position
+    message = session.current_message
+    assert_equal 2, message.words.count
+    assert_equal 2, message.words.find_by(text: "world").position
+  end
+
+  test "switch_turn! changes to the other group" do
+    session = GameSession.create!
+    group1 = session.groups.create!(name: "Team A")
+    group2 = session.groups.create!(name: "Team B")
+    session.update!(current_turn_group: group1, round_started_at: Time.current)
+
+    session.switch_turn!
+
+    assert_equal group2, session.current_turn_group
+  end
+
+  test "start_new_message! creates a new message for current group" do
+    session = GameSession.create!
+    group = session.groups.create!(name: "Team A")
+    session.update!(current_turn_group: group, round_started_at: Time.current)
+
+    # Create first message
+    session.current_message
+
+    # Create second message
+    session.start_new_message!
+
+    assert_equal 2, session.messages.count
+    assert_equal 2, session.messages.last.position
   end
 end
