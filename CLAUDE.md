@@ -63,3 +63,50 @@ Group Group Chat is a real-time collaborative chat game where two groups have a 
 - Session codes exclude ambiguous characters (0, O, I, L)
 - Turn switching: `switch_turn!` changes to other group, `start_new_message!` creates new message
 - `current_message` returns most recent message for active group (or creates one)
+
+## LLM Game Orchestration
+
+The project includes a rake task for running LLM vs LLM games using Ollama.
+
+### Prerequisites
+
+```bash
+# Install Ollama (macOS)
+brew install ollama
+
+# Start Ollama server
+ollama serve
+
+# Pull a model (in another terminal)
+ollama pull llama3.2
+```
+
+### Running LLM Battles
+
+```bash
+# Basic 1v1 game with llama3.2
+rake game:llm_battle
+
+# 2v2 game (2 LLM players per group)
+rake game:llm_battle[2]
+
+# Use a different model
+rake game:llm_battle[1,mistral]
+
+# 3v3 with a specific model
+rake game:llm_battle[3,gemma2]
+```
+
+### Key Files
+
+- **lib/ollama_client.rb**: HTTP client for Ollama API
+  - `generate(prompt)`: Send prompt, get response
+  - `extract_word(response)`: Parse single word from LLM output
+  - `available?`: Check if Ollama is running and model exists
+
+- **lib/tasks/llm_game.rake**: Game orchestration
+  - Creates game session with two groups ("The Algorithms" vs "Neural Network")
+  - Each LLM player gets prompted with conversation context
+  - Handles word voting when multiple players per group
+  - Colorized terminal output
+  - Ctrl+C to end game early
