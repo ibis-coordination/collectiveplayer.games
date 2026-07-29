@@ -133,8 +133,9 @@ class GameSessionTest < ActiveSupport::TestCase
     message.submissions.create!(player: player2, word: "hello")
     message.submissions.create!(player: player3, word: "world")
 
-    # "hello" has 2 votes, "world" has 1
-    assert_equal "hello", session.determine_winner
+    # "hello"/"Hello" has 2 votes, "world" has 1; the first submitter's
+    # casing is preserved
+    assert_equal "Hello", session.determine_winner
   end
 
   test "determine_winner breaks ties randomly" do
@@ -268,6 +269,29 @@ class GameSessionTest < ActiveSupport::TestCase
     assert_equal group2, session.reload.current_turn_group
     assert_equal %w[message_completed turn_switched], events.map { |e| e[:type] }
     assert_equal "hello", events.first[:message_text]
+  end
+
+  test "determine_winner preserves the original casing of the winning word" do
+    session, group1, = build_active_session
+    message = session.current_message
+    message.submissions.create!(player: group1.players.first, word: "Paris")
+    message.submissions.create!(player: group1.players.second, word: "paris")
+
+    # Votes are tallied case-insensitively, but the stored word should keep
+    # a submitter's original casing rather than being downcased
+    assert_equal "Paris", session.determine_winner
+  end
+
+  test "complete_round! treats END with trailing punctuation as END" do
+    session, group1, group2 = build_active_session
+    message = session.current_message
+    session.add_winning_word!("hello")
+    group1.players.each { |p| message.submissions.create!(player: p, word: "END.") }
+
+    events = session.complete_round!
+
+    assert_equal group2, session.reload.current_turn_group
+    assert_equal "message_completed", events.first[:type]
   end
 
   # ============= TIMEOUT_ROUND! =============

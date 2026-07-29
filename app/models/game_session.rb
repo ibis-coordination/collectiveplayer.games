@@ -47,7 +47,9 @@ class GameSession < ApplicationRecord
     current_message.submissions.exists?(player: player)
   end
 
-  # Determine the winning word from current message submissions
+  # Determine the winning word from current message submissions.
+  # Votes are tallied case-insensitively; the returned word keeps the
+  # original casing of the first submitter of the winning spelling.
   def determine_winner
     return nil unless current_message
 
@@ -55,8 +57,14 @@ class GameSession < ApplicationRecord
     return nil if votes.empty?
 
     max_votes = votes.values.map(&:size).max
-    winners = votes.select { |_, v| v.size == max_votes }.keys
-    winners.sample # Random tie-breaker
+    winners = votes.values.select { |v| v.size == max_votes }
+    winners.sample.first.word.strip # Random tie-breaker
+  end
+
+  # Does this word mean END? Case-insensitive, forgiving of trailing
+  # punctuation ("END.", "end!").
+  def end_word?(word)
+    word.to_s.downcase.strip.sub(/[[:punct:]]+\z/, "") == "end"
   end
 
   # Add winning word to current message
@@ -157,7 +165,7 @@ class GameSession < ApplicationRecord
   def process_round!(message)
     winning_word = determine_winner
 
-    if winning_word&.downcase == "end"
+    if end_word?(winning_word)
       message.submissions.destroy_all
 
       if message.words.empty?
