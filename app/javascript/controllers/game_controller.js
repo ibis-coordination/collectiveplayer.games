@@ -125,10 +125,18 @@ export default class extends Controller {
       const isOwnGroup = this.playerGroupIdValue === groupId
       const div = document.createElement("div")
       div.className = `chat-message ${isOwnGroup ? 'own-group' : 'other-group'}`
-      div.innerHTML = `
-        <span class="group-label">${groupName}:</span>
-        <span class="message-text">${messageText}</span>
-      `
+
+      // Build with textContent: group names and words are player-controlled
+      // and must never be injected as HTML
+      const label = document.createElement("span")
+      label.className = "group-label"
+      label.textContent = `${groupName}:`
+
+      const text = document.createElement("span")
+      text.className = "message-text"
+      text.textContent = messageText
+
+      div.append(label, " ", text)
       this.chatTranscriptTarget.appendChild(div)
     }
   }
@@ -137,12 +145,15 @@ export default class extends Controller {
     this.activeGroupIdValue = activeGroupId
     const isOurTurn = this.playerGroupIdValue === activeGroupId
 
-    // Update turn indicator
+    // Update turn indicator (group names are player-controlled: never
+    // inject them as HTML)
     if (this.hasTurnIndicatorTarget) {
       if (isOurTurn) {
         this.turnIndicatorTarget.innerHTML = `<strong>Your group's turn!</strong> Compose a message together.`
       } else {
-        this.turnIndicatorTarget.innerHTML = `Waiting for <strong>${activeGroupName}</strong> to compose their message...`
+        const strong = document.createElement("strong")
+        strong.textContent = activeGroupName
+        this.turnIndicatorTarget.replaceChildren("Waiting for ", strong, " to compose their message...")
       }
     }
 
