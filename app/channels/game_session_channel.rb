@@ -27,7 +27,7 @@ class GameSessionChannel < ApplicationCable::Channel
     word = data["word"].to_s.strip
     return if word.blank?
 
-    @game_session.current_message.submissions.create!(
+    @game_session.current_message!.submissions.create!(
       player: player,
       word: word
     )

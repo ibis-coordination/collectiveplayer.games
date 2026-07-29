@@ -202,7 +202,7 @@ class GameSessionsController < ApplicationController
       head :unprocessable_entity and return
     end
 
-    @game_session.current_message.submissions.create!(
+    @game_session.current_message!.submissions.create!(
       player: @current_player,
       word: word
     )

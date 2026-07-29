@@ -22,15 +22,19 @@ class GameSession < ApplicationRecord
     end
   end
 
-  # Returns the current message being composed (or creates one if needed)
+  # Returns the current message being composed, or nil. Read-only: use
+  # current_message! from write paths that need the message to exist.
   def current_message
     return nil unless current_turn_group
 
-    # Find the most recent message for the current group, or create one
-    existing = messages.where(group: current_turn_group).order(:position).last
-    return existing if existing
+    messages.where(group: current_turn_group).order(:position).last
+  end
 
-    messages.create!(group: current_turn_group, position: messages.count + 1)
+  # Find or create the message currently being composed
+  def current_message!
+    return nil unless current_turn_group
+
+    current_message || messages.create!(group: current_turn_group, position: messages.count + 1)
   end
 
   # Check if all players in the active group have submitted for current message
@@ -69,10 +73,13 @@ class GameSession < ApplicationRecord
 
   # Add winning word to current message
   def add_winning_word!(word_text)
-    return if word_text.blank? || current_message.nil?
+    return if word_text.blank?
 
-    current_message.words.create!(
-      position: current_message.words.count + 1,
+    message = current_message!
+    return if message.nil?
+
+    message.words.create!(
+      position: message.words.count + 1,
       text: word_text
     )
     update!(round_started_at: Time.current)
@@ -129,16 +136,15 @@ class GameSession < ApplicationRecord
       return nil unless active? && current_turn_group && round_expired?
 
       message = current_message
-      return nil if message.nil?
-
-      if message.submissions.any?
-        process_round!(message)
-      else
+      if message.nil? || message.submissions.none?
+        # Nobody submitted: restart the round timer
         update!(round_started_at: Time.current)
         [{
           type: "round_reset",
           round_started_at: round_started_at.iso8601
         }]
+      else
+        process_round!(message)
       end
     end
   end

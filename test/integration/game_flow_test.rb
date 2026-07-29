@@ -66,7 +66,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
     end
     assert_response :ok
 
-    submission = game_session.current_message.submissions.last
+    submission = game_session.current_message!.submissions.last
     assert_equal "hello", submission.word
     assert_equal host, submission.player
   end
@@ -127,7 +127,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
     game_session.update!(status: :active, current_turn_group: group1)
 
     # Add a word to the message first
-    message = game_session.current_message
+    message = game_session.current_message!
     message.words.create!(position: 1, text: "hello")
 
     # Switch turn

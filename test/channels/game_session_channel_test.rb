@@ -32,12 +32,12 @@ class GameSessionChannelTest < ActionCable::Channel::TestCase
     subscribe code: session.code
     perform :submit_word, { "word" => "hello", "player_token" => player.token }
 
-    assert_equal 1, session.current_message.submissions.count
+    assert_equal 1, session.current_message!.submissions.count
   end
 
   test "submit_word processes the round when all players have submitted" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     subscribe code: session.code
@@ -49,7 +49,7 @@ class GameSessionChannelTest < ActionCable::Channel::TestCase
 
   test "check_timeout tallies partial submissions when the round has expired" do
     session, group1, = build_active_session(time_limit: 10, round_started_at: 1.minute.ago)
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     subscribe code: session.code
@@ -60,7 +60,7 @@ class GameSessionChannelTest < ActionCable::Channel::TestCase
 
   test "check_timeout does nothing while time remains" do
     session, group1, = build_active_session(time_limit: 300)
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     subscribe code: session.code

@@ -395,13 +395,13 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
     post submit_word_game_session_path(game_session.code), params: { word: "hello" }
     assert_response :ok
-    assert_equal "hello", game_session.reload.current_message.text
+    assert_equal "hello", game_session.reload.current_message!.text
 
     # Host is the only player in the active group, so the round completed.
     # The next word must be accepted.
     post submit_word_game_session_path(game_session.code), params: { word: "world" }
     assert_response :ok
-    assert_equal "hello world", game_session.reload.current_message.text
+    assert_equal "hello world", game_session.reload.current_message!.text
   end
 
   test "submissions are cleared after a round completes" do
@@ -415,7 +415,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
     post submit_word_game_session_path(game_session.code), params: { word: "hello" }
 
-    assert_equal 0, game_session.reload.current_message.submissions.count
+    assert_equal 0, game_session.reload.current_message!.submissions.count
   end
 
   # Regression: a visitor who never joined the session has no @current_player;
@@ -441,7 +441,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     host = game_session.players.first
     host.update!(group: group1)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
-    message = game_session.current_message
+    message = game_session.current_message!
     message.submissions.create!(player: host, word: "first")
 
     assert_no_difference "Submission.count" do

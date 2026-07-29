@@ -192,7 +192,7 @@ class LLMGameOrchestrator
       end
 
       current_group = @game_session.current_turn_group
-      current_message = @game_session.current_message
+      current_message = @game_session.current_message!
       current_text = current_message&.text || ''
 
       # Print current state
@@ -231,7 +231,7 @@ class LLMGameOrchestrator
       puts "#{COLORS[:green]}\"#{word}\"#{COLORS[:reset]}"
 
       # Create submission
-      @game_session.current_message.submissions.create!(
+      @game_session.current_message!.submissions.create!(
         player: player,
         word: word
       )

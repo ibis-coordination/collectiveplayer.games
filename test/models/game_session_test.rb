@@ -61,7 +61,7 @@ class GameSessionTest < ActiveSupport::TestCase
     player2 = session.players.create!(name: "Player 2", group: group)
     session.update!(current_turn_group: group)
 
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: player1, word: "hello")
     message.submissions.create!(player: player2, word: "world")
 
@@ -75,7 +75,7 @@ class GameSessionTest < ActiveSupport::TestCase
     player2 = session.players.create!(name: "Player 2", group: group)
     session.update!(current_turn_group: group)
 
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: player1, word: "hello")
 
     assert_not session.all_group_players_submitted?
@@ -87,7 +87,7 @@ class GameSessionTest < ActiveSupport::TestCase
     player = session.players.create!(name: "Player 1", group: group)
     session.update!(current_turn_group: group)
 
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: player, word: "hello")
 
     assert session.player_submitted?(player)
@@ -98,7 +98,7 @@ class GameSessionTest < ActiveSupport::TestCase
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     session.update!(current_turn_group: group)
-    session.current_message # Ensure message is created
+    session.current_message! # Ensure message is created
 
     assert_not session.player_submitted?(player)
   end
@@ -110,7 +110,7 @@ class GameSessionTest < ActiveSupport::TestCase
     session.update!(current_turn_group: group)
 
     # Submit for first message
-    first_message = session.current_message
+    first_message = session.current_message!
     first_message.submissions.create!(player: player, word: "hello")
 
     # Create new message (simulating turn switch and return)
@@ -128,7 +128,7 @@ class GameSessionTest < ActiveSupport::TestCase
     player3 = session.players.create!(name: "Player 3", group: group)
     session.update!(current_turn_group: group)
 
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: player1, word: "Hello")
     message.submissions.create!(player: player2, word: "hello")
     message.submissions.create!(player: player3, word: "world")
@@ -145,7 +145,7 @@ class GameSessionTest < ActiveSupport::TestCase
     player2 = session.players.create!(name: "Player 2", group: group)
     session.update!(current_turn_group: group)
 
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: player1, word: "hello")
     message.submissions.create!(player: player2, word: "world")
 
@@ -161,7 +161,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
     session.add_winning_word!("hello")
 
-    message = session.current_message
+    message = session.current_message!
     assert_equal 1, message.words.count
     assert_equal "hello", message.words.first.text
     assert_equal 1, message.words.first.position
@@ -175,7 +175,7 @@ class GameSessionTest < ActiveSupport::TestCase
     session.add_winning_word!("hello")
     session.add_winning_word!("world")
 
-    message = session.current_message
+    message = session.current_message!
     assert_equal 2, message.words.count
     assert_equal 2, message.words.find_by(text: "world").position
   end
@@ -197,7 +197,7 @@ class GameSessionTest < ActiveSupport::TestCase
     session.update!(current_turn_group: group, round_started_at: Time.current)
 
     # Create first message
-    session.current_message
+    session.current_message!
 
     # Create second message
     session.start_new_message!
@@ -223,7 +223,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! adds the winning word and clears submissions" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     group1.players.each { |p| message.submissions.create!(player: p, word: "hello") }
 
     events = session.complete_round!
@@ -235,7 +235,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! does nothing until all players have submitted" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     events = session.complete_round!
@@ -247,7 +247,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! is a no-op when called again after processing" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     group1.players.each { |p| message.submissions.create!(player: p, word: "hello") }
 
     session.complete_round!
@@ -260,7 +260,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! completes the message and switches turn on END" do
     session, group1, group2 = build_active_session
-    message = session.current_message
+    message = session.current_message!
     session.add_winning_word!("hello")
     group1.players.each { |p| message.submissions.create!(player: p, word: "END") }
 
@@ -271,9 +271,27 @@ class GameSessionTest < ActiveSupport::TestCase
     assert_equal "hello", events.first[:message_text]
   end
 
+  test "current_message is read-only and does not create messages" do
+    session, = build_active_session
+
+    assert_no_difference "Message.count" do
+      assert_nil session.current_message
+    end
+  end
+
+  test "current_message! creates the message being composed when missing" do
+    session, group1, = build_active_session
+
+    message = session.current_message!
+
+    assert_equal group1, message.group
+    assert_equal message, session.current_message
+    assert_equal 1, session.messages.count
+  end
+
   test "determine_winner preserves the original casing of the winning word" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "Paris")
     message.submissions.create!(player: group1.players.second, word: "paris")
 
@@ -284,7 +302,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! treats END with trailing punctuation as END" do
     session, group1, group2 = build_active_session
-    message = session.current_message
+    message = session.current_message!
     session.add_winning_word!("hello")
     group1.players.each { |p| message.submissions.create!(player: p, word: "END.") }
 
@@ -301,7 +319,7 @@ class GameSessionTest < ActiveSupport::TestCase
   test "timeout_round! tallies partial submissions when the round has expired" do
     session, group1, = build_active_session
     session.update!(time_limit_seconds: 10, round_started_at: 1.minute.ago)
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     events = session.timeout_round!
@@ -314,7 +332,7 @@ class GameSessionTest < ActiveSupport::TestCase
   test "timeout_round! does nothing while the round has time remaining" do
     session, group1, = build_active_session
     session.update!(time_limit_seconds: 300, round_started_at: Time.current)
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     events = session.timeout_round!
@@ -327,7 +345,7 @@ class GameSessionTest < ActiveSupport::TestCase
   test "timeout_round! resets the timer when nobody submitted" do
     session, = build_active_session
     session.update!(time_limit_seconds: 10, round_started_at: 1.minute.ago)
-    session.current_message
+    session.current_message!
     old_started_at = session.round_started_at
 
     events = session.timeout_round!
@@ -340,7 +358,7 @@ class GameSessionTest < ActiveSupport::TestCase
   test "timeout_round! does nothing without a time limit" do
     session, group1, = build_active_session
     session.update!(time_limit_seconds: nil, round_started_at: 1.hour.ago)
-    message = session.current_message
+    message = session.current_message!
     message.submissions.create!(player: group1.players.first, word: "hello")
 
     assert_nil session.timeout_round!
@@ -348,7 +366,7 @@ class GameSessionTest < ActiveSupport::TestCase
 
   test "complete_round! ends the game when END is the first word" do
     session, group1, = build_active_session
-    message = session.current_message
+    message = session.current_message!
     group1.players.each { |p| message.submissions.create!(player: p, word: "END") }
 
     events = session.complete_round!
