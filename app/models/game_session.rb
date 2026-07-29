@@ -107,43 +107,29 @@ class GameSession < ApplicationRecord
       return nil if message.nil? || message.submissions.none?
       return nil unless all_group_players_submitted?
 
-      winning_word = determine_winner
+      process_round!(message)
+    end
+  end
 
-      if winning_word&.downcase == "end"
-        message.submissions.destroy_all
+  # Process an expired round (time limit reached) using whatever submissions
+  # exist. If nobody submitted, the round timer resets instead. Safe to call
+  # repeatedly/concurrently: processing or resetting bumps round_started_at,
+  # so the round no longer counts as expired.
+  def timeout_round!
+    ROUND_PROCESSING_MUTEX.synchronize do
+      reload
+      return nil unless active? && current_turn_group && round_expired?
 
-        if message.words.empty?
-          # END as the first word ends the whole game
-          update!(status: :complete)
-          [{
-            type: "game_ended",
-            conversation: conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
-          }]
-        else
-          # Message complete: switch turns and open a new message
-          completed_event = {
-            type: "message_completed",
-            group_id: current_turn_group.id,
-            group_name: current_turn_group.name,
-            message_text: message.text
-          }
-          switch_turn!
-          start_new_message!
-          [completed_event, {
-            type: "turn_switched",
-            active_group_id: current_turn_group.id,
-            active_group_name: current_turn_group.name
-          }]
-        end
+      message = current_message
+      return nil if message.nil?
+
+      if message.submissions.any?
+        process_round!(message)
       else
-        add_winning_word!(winning_word) if winning_word
-        # Clear this round's submissions so players can submit the next word
-        message.submissions.destroy_all
+        update!(round_started_at: Time.current)
         [{
-          type: "word_revealed",
-          word: winning_word,
-          group_id: current_turn_group.id,
-          message_text: message.reload.text
+          type: "round_reset",
+          round_started_at: round_started_at.iso8601
         }]
       end
     end
@@ -164,6 +150,51 @@ class GameSession < ApplicationRecord
   end
 
   private
+
+  # Tally the current submissions and apply the result (add word, complete
+  # message, or end the game). Callers hold ROUND_PROCESSING_MUTEX and have
+  # verified the round should be processed. Returns broadcast event hashes.
+  def process_round!(message)
+    winning_word = determine_winner
+
+    if winning_word&.downcase == "end"
+      message.submissions.destroy_all
+
+      if message.words.empty?
+        # END as the first word ends the whole game
+        update!(status: :complete)
+        [{
+          type: "game_ended",
+          conversation: conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
+        }]
+      else
+        # Message complete: switch turns and open a new message
+        completed_event = {
+          type: "message_completed",
+          group_id: current_turn_group.id,
+          group_name: current_turn_group.name,
+          message_text: message.text
+        }
+        switch_turn!
+        start_new_message!
+        [completed_event, {
+          type: "turn_switched",
+          active_group_id: current_turn_group.id,
+          active_group_name: current_turn_group.name
+        }]
+      end
+    else
+      add_winning_word!(winning_word) if winning_word
+      # Clear this round's submissions so players can submit the next word
+      message.submissions.destroy_all
+      [{
+        type: "word_revealed",
+        word: winning_word,
+        group_id: current_turn_group.id,
+        message_text: message.reload.text
+      }]
+    end
+  end
 
   def generate_code
     loop do

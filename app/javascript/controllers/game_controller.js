@@ -64,6 +64,13 @@ export default class extends Controller {
       case "turn_switched":
         this.switchTurn(data.active_group_id, data.active_group_name)
         break
+      case "round_reset":
+        // Round timed out with no submissions; server restarted the timer
+        if (this.timeLimitValue > 0) {
+          this.roundStartedAtValue = data.round_started_at
+          this.startTimer()
+        }
+        break
       case "game_ended":
         window.location.reload()
         break
@@ -225,6 +232,7 @@ export default class extends Controller {
       clearInterval(this.timerInterval)
     }
 
+    this.timeoutRequested = false
     this.updateTimerDisplay()
     this.timerInterval = setInterval(() => this.updateTimerDisplay(), 100)
   }
@@ -243,6 +251,13 @@ export default class extends Controller {
       this.timerValueTarget.classList.add("urgent")
     } else {
       this.timerValueTarget.classList.remove("urgent")
+    }
+
+    // Time's up: ask the server to resolve the round (it re-checks expiry,
+    // so it's safe for every client to send this once)
+    if (remaining <= 0 && !this.timeoutRequested) {
+      this.timeoutRequested = true
+      this.subscription.perform("check_timeout", {})
     }
   }
 }

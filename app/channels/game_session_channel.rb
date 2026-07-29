@@ -37,6 +37,19 @@ class GameSessionChannel < ApplicationCable::Channel
     events&.each { |event| GameSessionChannel.broadcast_to(@game_session, event) }
   end
 
+  # Clients call this when their countdown reaches zero. The server is the
+  # authority: it re-checks expiry and either tallies the round from partial
+  # submissions or resets the timer. Safe for every client to call at once.
+  def check_timeout(_data = {})
+    return unless @game_session
+
+    @game_session.reload
+    return unless @game_session.active?
+
+    events = @game_session.timeout_round!
+    events&.each { |event| GameSessionChannel.broadcast_to(@game_session, event) }
+  end
+
   private
 
   def find_player(token)

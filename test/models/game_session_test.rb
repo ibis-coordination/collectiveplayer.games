@@ -270,6 +270,58 @@ class GameSessionTest < ActiveSupport::TestCase
     assert_equal "hello", events.first[:message_text]
   end
 
+  # ============= TIMEOUT_ROUND! =============
+  # With a time limit set, an expired round is tallied from whatever
+  # submissions exist; if nobody submitted, the timer resets instead.
+
+  test "timeout_round! tallies partial submissions when the round has expired" do
+    session, group1, = build_active_session
+    session.update!(time_limit_seconds: 10, round_started_at: 1.minute.ago)
+    message = session.current_message
+    message.submissions.create!(player: group1.players.first, word: "hello")
+
+    events = session.timeout_round!
+
+    assert_equal "hello", message.reload.text
+    assert_equal 0, message.submissions.count
+    assert_equal "word_revealed", events.first[:type]
+  end
+
+  test "timeout_round! does nothing while the round has time remaining" do
+    session, group1, = build_active_session
+    session.update!(time_limit_seconds: 300, round_started_at: Time.current)
+    message = session.current_message
+    message.submissions.create!(player: group1.players.first, word: "hello")
+
+    events = session.timeout_round!
+
+    assert_nil events
+    assert_equal "", message.reload.text
+    assert_equal 1, message.submissions.count
+  end
+
+  test "timeout_round! resets the timer when nobody submitted" do
+    session, = build_active_session
+    session.update!(time_limit_seconds: 10, round_started_at: 1.minute.ago)
+    session.current_message
+    old_started_at = session.round_started_at
+
+    events = session.timeout_round!
+
+    assert_equal "round_reset", events.first[:type]
+    assert session.reload.round_started_at > old_started_at
+    assert_not session.round_expired?
+  end
+
+  test "timeout_round! does nothing without a time limit" do
+    session, group1, = build_active_session
+    session.update!(time_limit_seconds: nil, round_started_at: 1.hour.ago)
+    message = session.current_message
+    message.submissions.create!(player: group1.players.first, word: "hello")
+
+    assert_nil session.timeout_round!
+  end
+
   test "complete_round! ends the game when END is the first word" do
     session, group1, = build_active_session
     message = session.current_message
