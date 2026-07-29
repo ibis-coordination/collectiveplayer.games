@@ -66,54 +66,35 @@ Group Group Chat is a real-time collaborative chat game where two groups have a 
 
 ## LLM Game Orchestration
 
-The project includes a rake task for running LLM vs LLM games using either the Anthropic Claude API or local Ollama.
+The project includes a rake task for running LLM vs LLM games via OpenRouter, which provides access to a variety of models through one API.
 
 ### Prerequisites
 
-Anthropic (default when `ANTHROPIC_API_KEY` is set):
-
-```bash
-export ANTHROPIC_API_KEY=your-key-here
-```
-
-Ollama (local):
-
-```bash
-# Install Ollama (macOS)
-brew install ollama
-
-# Start Ollama server
-ollama serve
-
-# Pull a model (in another terminal)
-ollama pull llama3.2
-```
+Set `OPENROUTER_API_KEY` in `.env` at the repo root (loaded via dotenv-rails), or export it in your shell.
 
 ### Running LLM Games
 
 ```bash
-# Basic 1v1 game (auto-detects provider: anthropic if ANTHROPIC_API_KEY is set, else ollama)
+# Basic 1v1 game (uses anthropic/claude-haiku-4.5 by default)
 rake game:llm
 
 # 2v2 game (2 LLM players per group)
 rake game:llm[2]
 
-# Use a different model
-rake game:llm[1,claude-3-5-sonnet-20241022]
+# Use any OpenRouter model ID (https://openrouter.ai/models)
+rake "game:llm[1,openai/gpt-4o-mini]"
 
-# Explicit provider as third arg
-rake "game:llm[1,llama3.2,ollama]"
+# Multiple models are assigned to players round-robin
+rake "game:llm[2,anthropic/claude-haiku-4.5,openai/gpt-4o-mini]"
 ```
 
 ### Key Files
 
-- **lib/anthropic_client.rb**: HTTP client for the Anthropic Claude API
-- **lib/ollama_client.rb**: HTTP client for Ollama API
-
-  Both clients share the same interface:
+- **lib/openrouter_client.rb**: HTTP client for the OpenRouter API
   - `generate(prompt)`: Send prompt, get response
   - `extract_word(response)`: Parse single word from LLM output
-  - `available?`: Check the provider is reachable and the model exists
+  - `available?`: Check an API key is set and the model exists
+  - `list_models`: List all OpenRouter model IDs
 
 - **lib/tasks/llm_game.rake**: Game orchestration
   - Creates game session with two groups ("The Algorithms" vs "Neural Network")

@@ -36,13 +36,11 @@ bin/rails test
 
 ## LLM vs LLM Mode
 
-Watch AI players play the game using either the Anthropic Claude API or local Ollama.
-
-### Using Anthropic Claude API (Recommended)
+Watch AI players play the game via [OpenRouter](https://openrouter.ai), which gives access to a variety of models through one API.
 
 ```bash
-# Set your API key
-export ANTHROPIC_API_KEY=your-key-here
+# Add your API key (get one at https://openrouter.ai/keys) to .env:
+cp .env.example .env  # then fill in OPENROUTER_API_KEY
 
 # Basic 1v1 game (uses Claude Haiku by default)
 rake game:llm
@@ -50,24 +48,13 @@ rake game:llm
 # 2v2 game (2 LLM players per team)
 rake game:llm[2]
 
-# Use a different model
-rake game:llm[1,claude-3-5-sonnet-20241022]
-```
+# Use any OpenRouter model (see https://openrouter.ai/models)
+rake "game:llm[1,openai/gpt-4o-mini]"
+rake "game:llm[2,meta-llama/llama-3.3-70b-instruct]"
 
-### Using Local Ollama
-
-```bash
-# Install Ollama (macOS)
-brew install ollama
-
-# Start Ollama server
-ollama serve
-
-# Pull a model
-ollama pull llama3.2
-
-# Run with Ollama provider
-rake "game:llm[1,llama3.2,ollama]"
+# Mix models: list several and they're assigned to players round-robin
+# (3v3 where each of the 6 players is a different model)
+rake "game:llm[3,anthropic/claude-haiku-4.5,openai/gpt-4o-mini,google/gemini-2.5-flash,meta-llama/llama-3.3-70b-instruct,mistralai/mistral-nemo,deepseek/deepseek-chat]"
 ```
 
 Press `Ctrl+C` to end the game early.
@@ -78,4 +65,4 @@ Press `Ctrl+C` to end the game early.
 - SQLite
 - Hotwire (Turbo + Stimulus)
 - ActionCable (WebSockets)
-- Ollama (for LLM integration)
+- OpenRouter (for LLM integration)

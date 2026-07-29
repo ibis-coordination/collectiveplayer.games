@@ -1,23 +1,20 @@
 # frozen_string_literal: true
 
-require_relative '../ollama_client'
-require_relative '../anthropic_client'
+require_relative '../openrouter_client'
 
 namespace :game do
   desc 'Run an LLM vs LLM game of Word Ouija'
-  task :llm, [:players_per_group, :model, :provider] => :environment do |_t, args|
+  task :llm, [:players_per_group, :model] => :environment do |_t, args|
     players_per_group = (args[:players_per_group] || 1).to_i
 
-    # Auto-detect provider based on API key availability
-    provider = args[:provider] || (ENV['ANTHROPIC_API_KEY'] ? 'anthropic' : 'ollama')
-
-    # Set default model based on provider
-    model = args[:model] || (provider == 'anthropic' ? 'claude-3-haiku-20240307' : 'llama3.2')
+    # Accept any number of models; they are assigned to players round-robin.
+    # e.g. rake "game:llm[3,anthropic/claude-haiku-4.5,openai/gpt-4o-mini]"
+    models = [args[:model], *args.extras].compact
+    models = [OpenRouterClient::DEFAULT_MODEL] if models.empty?
 
     orchestrator = LLMGameOrchestrator.new(
       players_per_group: players_per_group,
-      model: model,
-      provider: provider
+      models: models
     )
 
     orchestrator.run
@@ -48,11 +45,11 @@ class LLMGameOrchestrator
     %w[Omega Sigma Theta Lambda]
   ].freeze
 
-  def initialize(players_per_group:, model:, provider: 'anthropic')
+  def initialize(players_per_group:, models:)
     @players_per_group = players_per_group
-    @model = model
-    @provider = provider
-    @client = create_client(provider, model)
+    @models = models
+    @clients = models.map { |m| OpenRouterClient.new(model: m) }
+    @player_clients = {}  # player.id => client, assigned round-robin at setup
     @game_session = nil
     @groups = []
     @running = true
@@ -61,17 +58,6 @@ class LLMGameOrchestrator
     trap('INT') do
       puts "\n#{COLORS[:yellow]}Stopping game...#{COLORS[:reset]}"
       @running = false
-    end
-  end
-
-  def create_client(provider, model)
-    case provider.to_s.downcase
-    when 'anthropic', 'claude'
-      AnthropicClient.new(model: model)
-    when 'ollama'
-      OllamaClient.new(model: model)
-    else
-      raise "Unknown provider: #{provider}. Use 'anthropic' or 'ollama'"
     end
   end
 
@@ -85,16 +71,12 @@ class LLMGameOrchestrator
     play_game
 
     print_final_results
-  rescue OllamaClient::ConnectionError => e
-    puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
-    puts "Make sure Ollama is running: #{COLORS[:dim]}ollama serve#{COLORS[:reset]}"
-    exit 1
-  rescue OllamaClient::TimeoutError, AnthropicClient::TimeoutError => e
+  rescue OpenRouterClient::ConnectionError, OpenRouterClient::TimeoutError => e
     puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
     exit 1
-  rescue AnthropicClient::AuthError => e
+  rescue OpenRouterClient::AuthError => e
     puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
-    puts "Set your API key: #{COLORS[:dim]}export ANTHROPIC_API_KEY=your-key#{COLORS[:reset]}"
+    puts "Set your API key: #{COLORS[:dim]}export OPENROUTER_API_KEY=your-key#{COLORS[:reset]}"
     exit 1
   end
 
@@ -106,26 +88,39 @@ class LLMGameOrchestrator
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}║      🔮 Word Ouija: LLM Game 🔮        ║#{COLORS[:reset]}"
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}╚════════════════════════════════════════╝#{COLORS[:reset]}"
     puts
-    puts "#{COLORS[:dim]}Provider: #{@provider} | Model: #{@model} | Players per group: #{@players_per_group}#{COLORS[:reset]}"
+    model_label = @models.size == 1 ? "Model: #{@models.first}" : "Models: #{@models.join(', ')}"
+    puts "#{COLORS[:dim]}#{model_label} | Players per group: #{@players_per_group}#{COLORS[:reset]}"
     puts
   end
 
   def check_provider_availability
-    print "Checking #{@provider} availability... "
+    print "Checking OpenRouter availability... "
 
-    unless @client.available?
+    unless ENV['OPENROUTER_API_KEY']
       puts "#{COLORS[:red]}FAILED#{COLORS[:reset]}"
-      available_models = @client.list_models
-      if available_models.any?
-        puts "#{COLORS[:yellow]}Model '#{@model}' not found. Available models:#{COLORS[:reset]}"
-        available_models.each { |m| puts "  - #{m}" }
-      else
-        if @provider == 'anthropic'
-          puts "#{COLORS[:yellow]}Cannot connect to Anthropic API. Check your ANTHROPIC_API_KEY.#{COLORS[:reset]}"
-        else
-          puts "#{COLORS[:yellow]}Cannot connect to Ollama or no models installed.#{COLORS[:reset]}"
+      puts "#{COLORS[:yellow]}OPENROUTER_API_KEY is not set.#{COLORS[:reset]}"
+      exit 1
+    end
+
+    available_models = @clients.first.list_models
+    if available_models.empty?
+      puts "#{COLORS[:red]}FAILED#{COLORS[:reset]}"
+      puts "#{COLORS[:yellow]}Cannot connect to OpenRouter API.#{COLORS[:reset]}"
+      exit 1
+    end
+
+    missing = @models - available_models
+    if missing.any?
+      puts "#{COLORS[:red]}FAILED#{COLORS[:reset]}"
+      missing.each do |model|
+        puts "#{COLORS[:yellow]}Model '#{model}' not found on OpenRouter.#{COLORS[:reset]}"
+        matches = available_models.grep(/#{Regexp.escape(model.split('/').last)}/i).first(10)
+        if matches.any?
+          puts "Did you mean one of these?"
+          matches.each { |m| puts "  - #{m}" }
         end
       end
+      puts "Browse all models at #{COLORS[:dim]}https://openrouter.ai/models#{COLORS[:reset]}"
       exit 1
     end
 
@@ -143,17 +138,21 @@ class LLMGameOrchestrator
       @game_session.groups.create!(name: name)
     end
 
-    # Create players for each group
+    # Create players for each group, assigning models round-robin
+    player_count = 0
     @groups.each_with_index do |group, group_idx|
       @players_per_group.times do |player_idx|
         name = PLAYER_NAMES[group_idx][player_idx] || "Bot#{group_idx + 1}-#{player_idx + 1}"
         token = group_idx == 0 && player_idx == 0 ? @game_session.host_token : SecureRandom.urlsafe_base64(32)
 
-        @game_session.players.create!(
+        player = @game_session.players.create!(
           name: name,
           group: group,
           token: token
         )
+
+        @player_clients[player.id] = @clients[player_count % @clients.size]
+        player_count += 1
       end
     end
 
@@ -226,7 +225,7 @@ class LLMGameOrchestrator
     players = group.players.to_a
 
     players.each do |player|
-      print "  #{player.name} thinking... "
+      print "  #{player.name}#{model_suffix(player)} thinking... "
 
       word = generate_word_for_player(player, current_text)
       puts "#{COLORS[:green]}\"#{word}\"#{COLORS[:reset]}"
@@ -252,14 +251,24 @@ class LLMGameOrchestrator
     end
 
     prompt = build_prompt(player, current_text, word_count)
+    client = @player_clients[player.id]
 
     begin
-      response = @client.generate(prompt)
-      @client.extract_word(response)
-    rescue OllamaClient::Error, AnthropicClient::Error => e
+      response = client.generate(prompt)
+      client.extract_word(response)
+    rescue OpenRouterClient::Error => e
       puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
       'END'
     end
+  end
+
+  # Short model tag shown next to a player's name, e.g. " [gpt-4o-mini]"
+  # (omitted when all players use the same model)
+  def model_suffix(player)
+    return '' if @models.size == 1
+
+    model = @player_clients[player.id]&.model
+    model ? " #{COLORS[:dim]}[#{model.split('/').last}]#{COLORS[:reset]}" : ''
   end
 
   def build_prompt(player, current_text, word_count)
@@ -267,8 +276,9 @@ class LLMGameOrchestrator
     other_group = @groups.find { |g| g.id != player.group_id }
 
     prompt = <<~PROMPT
-      You are #{player.name}, playing Word Ouija - a word-by-word chat game.
-      Your team "#{player.group.name}" is chatting with "#{other_group.name}".
+      You are #{player.name}, playing Word Ouija - a game where your team writes chat messages ONE WORD AT A TIME.
+      Your team "#{player.group.name}" is having a conversation with the team "#{other_group.name}".
+      Each message must read as a natural, grammatical English sentence - not a list of related words.
 
     PROMPT
 
@@ -283,18 +293,22 @@ class LLMGameOrchestrator
     end
 
     if current_text.present?
-      prompt += "Your current message (#{word_count} words): \"#{current_text}\"\n\n"
-      # Encourage ending after a reasonable length
+      prompt += <<~PROMPT
+        Your team's message so far: "#{current_text} ___"
+
+        Choose the single word that best fills in the blank so the message continues as a natural sentence.
+        Do NOT repeat a word the message already contains unless grammar truly requires it.
+      PROMPT
+      prompt += "\n"
       if word_count >= 5
-        prompt += "IMPORTANT: Your message is getting long. Consider saying END to finish it.\n\n"
+        prompt += "If the message already reads as a complete sentence, reply END to send it.\n\n"
       end
     else
-      prompt += "You are starting a new message. Keep it brief (3-8 words is ideal).\n\n"
+      prompt += "Start a new message replying to the conversation. Reply with the FIRST word of a short sentence (3-8 words) that your teammates can build on.\n\n"
     end
 
     prompt += <<~PROMPT
-      Reply with ONE word only. No punctuation, no quotes.
-      Say END to finish and send your message.
+      Reply with exactly one word (or END to send the message). No punctuation, no quotes, no explanation.
 
       Word:
     PROMPT
