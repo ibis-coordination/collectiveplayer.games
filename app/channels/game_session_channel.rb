@@ -79,6 +79,9 @@ class GameSessionChannel < ApplicationCable::Channel
     else
       @game_session.add_winning_word!(winning_word) if winning_word
 
+      # Clear this round's submissions so players can submit the next word
+      current_message.submissions.destroy_all
+
       GameSessionChannel.broadcast_to(@game_session, {
         type: "word_revealed",
         word: winning_word,

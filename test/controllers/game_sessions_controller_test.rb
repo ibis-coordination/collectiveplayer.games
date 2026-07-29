@@ -244,6 +244,8 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     group2 = game_session.groups.create!(name: "Team B")
     host = game_session.players.first
     host.update!(group: group1)
+    # Second player in group1 keeps the round open, so the submission persists
+    game_session.players.create!(name: "Teammate", group: group1)
     game_session.players.create!(name: "Player 2", group: group2)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
@@ -285,6 +287,43 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     end
 
     assert_response :unprocessable_entity
+  end
+
+  # Regression: submissions must be cleared when a round completes, otherwise
+  # every player counts as "already submitted" forever and the game deadlocks
+  # after the first word.
+  test "player can submit again after a round completes" do
+    game_session = create_game_as_host
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    host = game_session.players.first
+    host.update!(group: group1)
+    game_session.players.create!(name: "Player 2", group: group2)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+
+    post submit_word_game_session_path(game_session.code), params: { word: "hello" }
+    assert_response :ok
+    assert_equal "hello", game_session.reload.current_message.text
+
+    # Host is the only player in the active group, so the round completed.
+    # The next word must be accepted.
+    post submit_word_game_session_path(game_session.code), params: { word: "world" }
+    assert_response :ok
+    assert_equal "hello world", game_session.reload.current_message.text
+  end
+
+  test "submissions are cleared after a round completes" do
+    game_session = create_game_as_host
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    host = game_session.players.first
+    host.update!(group: group1)
+    game_session.players.create!(name: "Player 2", group: group2)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+
+    post submit_word_game_session_path(game_session.code), params: { word: "hello" }
+
+    assert_equal 0, game_session.reload.current_message.submissions.count
   end
 
   test "submit_word rejects duplicate submission" do

@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development Approach: Red-Green TDD
+
+Use red-green TDD for all bug fixes and new features:
+
+1. **Red**: Write a failing test first that reproduces the bug (or specifies the new behavior). Run it and confirm it fails for the expected reason.
+2. **Green**: Make the minimal change needed to pass the test.
+3. **Refactor**: Clean up with the tests staying green.
+
+Every bug fix must include a regression test that fails before the fix and passes after. Do not fix a bug without first demonstrating it with a failing test.
+
 ## Build and Run Commands
 
 ```bash

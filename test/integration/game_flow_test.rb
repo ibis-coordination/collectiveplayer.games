@@ -56,6 +56,8 @@ class GameFlowTest < ActionDispatch::IntegrationTest
     group2 = game_session.groups.create!(name: "Team B")
     host = game_session.players.first
     host.update!(group: group1)
+    # Second player in group1 keeps the round open, so the submission persists
+    game_session.players.create!(name: "Teammate", group: group1)
     game_session.players.create!(name: "Player 2", group: group2)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
