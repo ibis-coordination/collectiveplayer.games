@@ -235,6 +235,98 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert game_session.complete?
   end
 
+  # ============= MID-GAME JOIN / SPECTATORS =============
+  # Rules: latecomers can join an active game (they spectate ungrouped and may
+  # pick a group at any time to start playing). Grouped players are locked to
+  # their group once the game starts. Completed games are view-only.
+
+  def create_active_game
+    game_session = GameSession.create!
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    game_session.players.create!(name: "P1", group: group1)
+    game_session.players.create!(name: "P2", group: group2)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+    game_session
+  end
+
+  test "latecomer can join an active game as an ungrouped spectator" do
+    game_session = create_active_game
+
+    assert_difference "Player.count", 1 do
+      post join_game_session_path(game_session.code), params: { name: "Latecomer" }
+    end
+
+    latecomer = game_session.players.find_by(name: "Latecomer")
+    assert_nil latecomer.group
+    assert_redirected_to game_session_path(game_session.code)
+  end
+
+  test "join is rejected once the game is complete" do
+    game_session = create_active_game
+    game_session.update!(status: :complete)
+
+    assert_no_difference "Player.count" do
+      post join_game_session_path(game_session.code), params: { name: "Latecomer" }
+    end
+
+    assert_redirected_to root_path
+  end
+
+  test "ungrouped player can join a group mid-game" do
+    game_session = create_active_game
+    group2 = game_session.groups.second
+    join_game_as_player(game_session, player_name: "Latecomer")
+
+    post join_group_game_session_path(game_session.code), params: { group_id: group2.id }
+
+    latecomer = game_session.players.find_by(name: "Latecomer")
+    assert_equal group2, latecomer.group
+  end
+
+  test "grouped player cannot switch groups mid-game" do
+    game_session = create_game_as_host
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    host = game_session.players.first
+    host.update!(group: group1)
+    game_session.players.create!(name: "P2", group: group2)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+
+    # Host tries to defect to the other team mid-game
+    post join_group_game_session_path(game_session.code), params: { group_id: group2.id }
+
+    assert_equal group1, host.reload.group
+  end
+
+  test "show renders the join form for non-players while the game is active" do
+    game_session = create_active_game
+
+    get game_session_path(game_session.code)
+
+    assert_response :ok
+  end
+
+  test "show renders the final conversation for non-players once the game is complete" do
+    game_session = create_active_game
+    game_session.update!(status: :complete)
+
+    get game_session_path(game_session.code)
+
+    assert_response :ok
+    assert_match "Conversation Complete", response.body
+  end
+
+  test "ungrouped spectator sees the active game with group join buttons" do
+    game_session = create_active_game
+    join_game_as_player(game_session, player_name: "Spectator")
+
+    get game_session_path(game_session.code)
+
+    assert_response :ok
+    assert_match "spectating", response.body
+  end
+
   # ============= SUBMIT_WORD =============
 
   test "submit_word creates submission for active group player" do
@@ -324,6 +416,23 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     post submit_word_game_session_path(game_session.code), params: { word: "hello" }
 
     assert_equal 0, game_session.reload.current_message.submissions.count
+  end
+
+  # Regression: a visitor who never joined the session has no @current_player;
+  # submit_word must reject them, not raise NoMethodError (500).
+  test "submit_word rejects visitor who has not joined" do
+    game_session = GameSession.create!
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    game_session.players.create!(name: "P1", group: group1)
+    game_session.players.create!(name: "P2", group: group2)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+
+    assert_no_difference "Submission.count" do
+      post submit_word_game_session_path(game_session.code), params: { word: "hello" }
+    end
+
+    assert_response :forbidden
   end
 
   test "submit_word rejects duplicate submission" do

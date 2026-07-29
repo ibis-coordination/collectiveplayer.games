@@ -24,7 +24,11 @@ class GameSessionsController < ApplicationController
 
   def show
     unless @current_player
-      # Show join form if not joined yet
+      # Completed games are view-only for non-players
+      return if @game_session.complete?
+
+      # Show join form if not joined yet (latecomers may join active games
+      # as ungrouped spectators)
       render :join_form and return
     end
   end
@@ -32,6 +36,10 @@ class GameSessionsController < ApplicationController
   def join
     if @current_player
       redirect_to game_session_path(@game_session.code) and return
+    end
+
+    if @game_session.complete?
+      redirect_to root_path, alert: "This game has finished" and return
     end
 
     name = params[:name].to_s.strip
@@ -58,6 +66,12 @@ class GameSessionsController < ApplicationController
   def join_group
     unless @current_player
       redirect_to game_session_path(@game_session.code), alert: "You must join the session first" and return
+    end
+
+    # In the lobby anyone can pick/switch groups. Mid-game, only ungrouped
+    # spectators may join a group; grouped players are locked in.
+    unless @game_session.waiting? || (@game_session.active? && @current_player.group.nil?)
+      redirect_to game_session_path(@game_session.code), alert: "Groups are locked once the game starts" and return
     end
 
     group_id = params[:group_id]
@@ -175,7 +189,7 @@ class GameSessionsController < ApplicationController
     end
 
     # Only players in the active group can submit
-    unless @current_player.group == @game_session.current_turn_group
+    unless @current_player && @current_player.group == @game_session.current_turn_group
       head :forbidden and return
     end
 

@@ -1,12 +1,12 @@
 <div class="game-container"
      data-controller="game"
      data-game-code-value="<%= @game_session.code %>"
-     data-game-player-token-value="<%= @current_player.token %>"
+     data-game-player-token-value="<%= @current_player&.token %>"
      data-game-status-value="<%= @game_session.status %>"
      data-game-time-limit-value="<%= @game_session.time_limit_seconds %>"
      data-game-round-started-at-value="<%= @game_session.round_started_at&.iso8601 %>"
-     data-game-is-host-value="<%= @current_player.host? %>"
-     data-game-player-group-id-value="<%= @current_player.group_id %>"
+     data-game-is-host-value="<%= @current_player ? @current_player.host? : false %>"
+     data-game-player-group-id-value="<%= @current_player&.group_id %>"
      data-game-active-group-id-value="<%= @game_session.current_turn_group_id %>">
 
   <% if @game_session.waiting? %>
@@ -138,7 +138,14 @@
         </div>
       <% end %>
 
-      <% if @game_session.current_turn_group == @current_player.group %>
+      <% if @current_player.group.nil? %>
+        <div class="spectator-banner">
+          <p>You're spectating. Join a group to play:</p>
+          <% @game_session.groups.each do |group| %>
+            <%= button_to "Join #{group.name}", join_group_game_session_path(@game_session.code, group_id: group.id), method: :post, class: "btn btn-secondary" %>
+          <% end %>
+        </div>
+      <% elsif @game_session.current_turn_group == @current_player.group %>
         <div class="word-input" data-game-target="wordInput">
           <% if @game_session.player_submitted?(@current_player) %>
             <p class="submitted-message">Word submitted! Waiting for teammates...</p>
