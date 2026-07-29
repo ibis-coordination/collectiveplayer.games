@@ -66,9 +66,17 @@ Group Group Chat is a real-time collaborative chat game where two groups have a 
 
 ## LLM Game Orchestration
 
-The project includes a rake task for running LLM vs LLM games using Ollama.
+The project includes a rake task for running LLM vs LLM games using either the Anthropic Claude API or local Ollama.
 
 ### Prerequisites
+
+Anthropic (default when `ANTHROPIC_API_KEY` is set):
+
+```bash
+export ANTHROPIC_API_KEY=your-key-here
+```
+
+Ollama (local):
 
 ```bash
 # Install Ollama (macOS)
@@ -81,32 +89,36 @@ ollama serve
 ollama pull llama3.2
 ```
 
-### Running LLM Battles
+### Running LLM Games
 
 ```bash
-# Basic 1v1 game with llama3.2
-rake game:llm_battle
+# Basic 1v1 game (auto-detects provider: anthropic if ANTHROPIC_API_KEY is set, else ollama)
+rake game:llm
 
 # 2v2 game (2 LLM players per group)
-rake game:llm_battle[2]
+rake game:llm[2]
 
 # Use a different model
-rake game:llm_battle[1,mistral]
+rake game:llm[1,claude-3-5-sonnet-20241022]
 
-# 3v3 with a specific model
-rake game:llm_battle[3,gemma2]
+# Explicit provider as third arg
+rake "game:llm[1,llama3.2,ollama]"
 ```
 
 ### Key Files
 
+- **lib/anthropic_client.rb**: HTTP client for the Anthropic Claude API
 - **lib/ollama_client.rb**: HTTP client for Ollama API
+
+  Both clients share the same interface:
   - `generate(prompt)`: Send prompt, get response
   - `extract_word(response)`: Parse single word from LLM output
-  - `available?`: Check if Ollama is running and model exists
+  - `available?`: Check the provider is reachable and the model exists
 
 - **lib/tasks/llm_game.rake**: Game orchestration
   - Creates game session with two groups ("The Algorithms" vs "Neural Network")
   - Each LLM player gets prompted with conversation context
   - Handles word voting when multiple players per group
+  - Caps game length (`MAX_WORDS_PER_MESSAGE`, `MAX_MESSAGES`)
   - Colorized terminal output
   - Ctrl+C to end game early

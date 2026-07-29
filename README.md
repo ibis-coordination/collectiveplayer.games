@@ -36,9 +36,25 @@ bin/rails test
 
 ## LLM vs LLM Mode
 
-Watch AI players battle it out using Ollama.
+Watch AI players play the game using either the Anthropic Claude API or local Ollama.
 
-### Prerequisites
+### Using Anthropic Claude API (Recommended)
+
+```bash
+# Set your API key
+export ANTHROPIC_API_KEY=your-key-here
+
+# Basic 1v1 game (uses Claude Haiku by default)
+rake game:llm
+
+# 2v2 game (2 LLM players per team)
+rake game:llm[2]
+
+# Use a different model
+rake game:llm[1,claude-3-5-sonnet-20241022]
+```
+
+### Using Local Ollama
 
 ```bash
 # Install Ollama (macOS)
@@ -49,19 +65,9 @@ ollama serve
 
 # Pull a model
 ollama pull llama3.2
-```
 
-### Run an LLM Battle
-
-```bash
-# Basic 1v1 game
-rake game:llm_battle
-
-# 2v2 game (2 LLM players per team)
-rake game:llm_battle[2]
-
-# Use a different model
-rake game:llm_battle[1,mistral]
+# Run with Ollama provider
+rake "game:llm[1,llama3.2,ollama]"
 ```
 
 Press `Ctrl+C` to end the game early.

@@ -1,16 +1,23 @@
 # frozen_string_literal: true
 
 require_relative '../ollama_client'
+require_relative '../anthropic_client'
 
 namespace :game do
   desc 'Run an LLM vs LLM game of Word Ouija'
-  task :llm_battle, [:players_per_group, :model] => :environment do |_t, args|
+  task :llm, [:players_per_group, :model, :provider] => :environment do |_t, args|
     players_per_group = (args[:players_per_group] || 1).to_i
-    model = args[:model] || 'llama3.2'
+
+    # Auto-detect provider based on API key availability
+    provider = args[:provider] || (ENV['ANTHROPIC_API_KEY'] ? 'anthropic' : 'ollama')
+
+    # Set default model based on provider
+    model = args[:model] || (provider == 'anthropic' ? 'claude-3-haiku-20240307' : 'llama3.2')
 
     orchestrator = LLMGameOrchestrator.new(
       players_per_group: players_per_group,
-      model: model
+      model: model,
+      provider: provider
     )
 
     orchestrator.run
@@ -34,15 +41,18 @@ class LLMGameOrchestrator
 
   GROUP_COLORS = [COLORS[:cyan], COLORS[:magenta]].freeze
   GROUP_NAMES = ['The Algorithms', 'Neural Network'].freeze
+  MAX_WORDS_PER_MESSAGE = 12  # Force END after this many words
+  MAX_MESSAGES = 6  # End game after this many messages total
   PLAYER_NAMES = [
     %w[Alpha Beta Gamma Delta],
     %w[Omega Sigma Theta Lambda]
   ].freeze
 
-  def initialize(players_per_group:, model:)
+  def initialize(players_per_group:, model:, provider: 'anthropic')
     @players_per_group = players_per_group
     @model = model
-    @ollama = OllamaClient.new(model: model)
+    @provider = provider
+    @client = create_client(provider, model)
     @game_session = nil
     @groups = []
     @running = true
@@ -54,9 +64,20 @@ class LLMGameOrchestrator
     end
   end
 
+  def create_client(provider, model)
+    case provider.to_s.downcase
+    when 'anthropic', 'claude'
+      AnthropicClient.new(model: model)
+    when 'ollama'
+      OllamaClient.new(model: model)
+    else
+      raise "Unknown provider: #{provider}. Use 'anthropic' or 'ollama'"
+    end
+  end
+
   def run
     print_header
-    check_ollama_availability
+    check_provider_availability
 
     setup_game
     print_game_start
@@ -68,8 +89,12 @@ class LLMGameOrchestrator
     puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
     puts "Make sure Ollama is running: #{COLORS[:dim]}ollama serve#{COLORS[:reset]}"
     exit 1
-  rescue OllamaClient::TimeoutError => e
+  rescue OllamaClient::TimeoutError, AnthropicClient::TimeoutError => e
     puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
+    exit 1
+  rescue AnthropicClient::AuthError => e
+    puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
+    puts "Set your API key: #{COLORS[:dim]}export ANTHROPIC_API_KEY=your-key#{COLORS[:reset]}"
     exit 1
   end
 
@@ -78,24 +103,28 @@ class LLMGameOrchestrator
   def print_header
     puts
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}╔════════════════════════════════════════╗#{COLORS[:reset]}"
-    puts "#{COLORS[:bold]}#{COLORS[:yellow]}║     🔮 Word Ouija: LLM Battle 🔮       ║#{COLORS[:reset]}"
+    puts "#{COLORS[:bold]}#{COLORS[:yellow]}║      🔮 Word Ouija: LLM Game 🔮        ║#{COLORS[:reset]}"
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}╚════════════════════════════════════════╝#{COLORS[:reset]}"
     puts
-    puts "#{COLORS[:dim]}Model: #{@model} | Players per group: #{@players_per_group}#{COLORS[:reset]}"
+    puts "#{COLORS[:dim]}Provider: #{@provider} | Model: #{@model} | Players per group: #{@players_per_group}#{COLORS[:reset]}"
     puts
   end
 
-  def check_ollama_availability
-    print "Checking Ollama availability... "
+  def check_provider_availability
+    print "Checking #{@provider} availability... "
 
-    unless @ollama.available?
+    unless @client.available?
       puts "#{COLORS[:red]}FAILED#{COLORS[:reset]}"
-      available_models = @ollama.list_models
+      available_models = @client.list_models
       if available_models.any?
         puts "#{COLORS[:yellow]}Model '#{@model}' not found. Available models:#{COLORS[:reset]}"
         available_models.each { |m| puts "  - #{m}" }
       else
-        puts "#{COLORS[:yellow]}Cannot connect to Ollama or no models installed.#{COLORS[:reset]}"
+        if @provider == 'anthropic'
+          puts "#{COLORS[:yellow]}Cannot connect to Anthropic API. Check your ANTHROPIC_API_KEY.#{COLORS[:reset]}"
+        else
+          puts "#{COLORS[:yellow]}Cannot connect to Ollama or no models installed.#{COLORS[:reset]}"
+        end
       end
       exit 1
     end
@@ -155,6 +184,14 @@ class LLMGameOrchestrator
       round += 1
       @game_session.reload
 
+      # Check if we've hit max messages
+      completed_messages = @game_session.messages.joins(:words).distinct.count
+      if completed_messages >= MAX_MESSAGES
+        puts "\n#{COLORS[:yellow]}Max messages (#{MAX_MESSAGES}) reached - ending game#{COLORS[:reset]}"
+        @game_session.update!(status: :complete)
+        break
+      end
+
       current_group = @game_session.current_turn_group
       current_message = @game_session.current_message
       current_text = current_message&.text || ''
@@ -207,30 +244,36 @@ class LLMGameOrchestrator
   end
 
   def generate_word_for_player(player, current_text)
-    prompt = build_prompt(player, current_text)
+    # Force END if message is too long
+    word_count = current_text.split.size
+    if word_count >= MAX_WORDS_PER_MESSAGE
+      puts "#{COLORS[:dim]}(max words reached)#{COLORS[:reset]} "
+      return 'END'
+    end
+
+    prompt = build_prompt(player, current_text, word_count)
 
     begin
-      response = @ollama.generate(prompt)
-      @ollama.extract_word(response)
-    rescue OllamaClient::Error => e
+      response = @client.generate(prompt)
+      @client.extract_word(response)
+    rescue OllamaClient::Error, AnthropicClient::Error => e
       puts "#{COLORS[:red]}Error: #{e.message}#{COLORS[:reset]}"
       'END'
     end
   end
 
-  def build_prompt(player, current_text)
+  def build_prompt(player, current_text, word_count)
     conversation = @game_session.conversation
     other_group = @groups.find { |g| g.id != player.group_id }
 
     prompt = <<~PROMPT
-      You are #{player.name}, playing a collaborative word game called Word Ouija.
-      Your team "#{player.group.name}" is having a conversation with "#{other_group.name}".
-      Each team writes messages one word at a time, with all team members voting on each word.
+      You are #{player.name}, playing Word Ouija - a word-by-word chat game.
+      Your team "#{player.group.name}" is chatting with "#{other_group.name}".
 
     PROMPT
 
     if conversation.any?
-      prompt += "The conversation so far:\n"
+      prompt += "Conversation so far:\n"
       conversation.each do |msg|
         next if msg[:text].blank?
         label = msg[:group].id == player.group_id ? "Your team" : other_group.name
@@ -240,18 +283,20 @@ class LLMGameOrchestrator
     end
 
     if current_text.present?
-      prompt += "Your team's current message so far: \"#{current_text}\"\n\n"
+      prompt += "Your current message (#{word_count} words): \"#{current_text}\"\n\n"
+      # Encourage ending after a reasonable length
+      if word_count >= 5
+        prompt += "IMPORTANT: Your message is getting long. Consider saying END to finish it.\n\n"
+      end
     else
-      prompt += "You are starting a new message.\n\n"
+      prompt += "You are starting a new message. Keep it brief (3-8 words is ideal).\n\n"
     end
 
     prompt += <<~PROMPT
-      Respond with ONLY a single word to add to your team's message.
-      - No punctuation, no quotes, no explanation
-      - Just one word
-      - If you want to finish your message and send it, respond with just: END
+      Reply with ONE word only. No punctuation, no quotes.
+      Say END to finish and send your message.
 
-      Your word:
+      Word:
     PROMPT
 
     prompt
