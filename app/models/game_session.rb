@@ -87,6 +87,68 @@ class GameSession < ApplicationRecord
     update!(round_started_at: Time.current)
   end
 
+  # Serializes round processing within this process. Two players submitting
+  # simultaneously must not both process the same round (double words /
+  # double turn-switches). SQLite has no SELECT ... FOR UPDATE, so a
+  # process-level mutex plus the re-check below is our guard.
+  ROUND_PROCESSING_MUTEX = Mutex.new
+
+  # Process the current round if (and only if) every player in the active
+  # group has submitted. Returns an array of event hashes for the caller to
+  # broadcast, or nil if there was nothing to process. Safe to call
+  # repeatedly/concurrently: a second call is a no-op because the first one
+  # clears the round's submissions.
+  def complete_round!
+    ROUND_PROCESSING_MUTEX.synchronize do
+      reload
+      return nil unless active? && current_turn_group
+
+      message = current_message
+      return nil if message.nil? || message.submissions.none?
+      return nil unless all_group_players_submitted?
+
+      winning_word = determine_winner
+
+      if winning_word&.downcase == "end"
+        message.submissions.destroy_all
+
+        if message.words.empty?
+          # END as the first word ends the whole game
+          update!(status: :complete)
+          [{
+            type: "game_ended",
+            conversation: conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
+          }]
+        else
+          # Message complete: switch turns and open a new message
+          completed_event = {
+            type: "message_completed",
+            group_id: current_turn_group.id,
+            group_name: current_turn_group.name,
+            message_text: message.text
+          }
+          switch_turn!
+          start_new_message!
+          [completed_event, {
+            type: "turn_switched",
+            active_group_id: current_turn_group.id,
+            active_group_name: current_turn_group.name
+          }]
+        end
+      else
+        add_winning_word!(winning_word) if winning_word
+        # Clear this round's submissions so players can submit the next word
+        message.submissions.destroy_all
+        [{
+          type: "word_revealed",
+          word: winning_word,
+          group_id: current_turn_group.id,
+          message_text: message.reload.text
+        }]
+      end
+    end
+  end
+
   def time_remaining
     return nil if time_limit_seconds.nil? || round_started_at.nil?
 

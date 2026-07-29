@@ -204,4 +204,80 @@ class GameSessionTest < ActiveSupport::TestCase
     assert_equal 2, session.messages.count
     assert_equal 2, session.messages.last.position
   end
+
+  # ============= COMPLETE_ROUND! =============
+  # Round processing must be self-guarding: it only acts when the round is
+  # actually complete, and a repeated/concurrent call is a no-op. This
+  # prevents two simultaneous submits from double-processing a round.
+
+  def build_active_session(players_in_group1: 2)
+    session = GameSession.create!
+    group1 = session.groups.create!(name: "Team A")
+    group2 = session.groups.create!(name: "Team B")
+    players_in_group1.times { |i| session.players.create!(name: "P#{i + 1}", group: group1) }
+    session.players.create!(name: "Other", group: group2)
+    session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+    [session, group1, group2]
+  end
+
+  test "complete_round! adds the winning word and clears submissions" do
+    session, group1, = build_active_session
+    message = session.current_message
+    group1.players.each { |p| message.submissions.create!(player: p, word: "hello") }
+
+    events = session.complete_round!
+
+    assert_equal "hello", message.reload.text
+    assert_equal 0, message.submissions.count
+    assert_equal "word_revealed", events.first[:type]
+  end
+
+  test "complete_round! does nothing until all players have submitted" do
+    session, group1, = build_active_session
+    message = session.current_message
+    message.submissions.create!(player: group1.players.first, word: "hello")
+
+    events = session.complete_round!
+
+    assert_nil events
+    assert_equal "", message.reload.text
+    assert_equal 1, message.submissions.count
+  end
+
+  test "complete_round! is a no-op when called again after processing" do
+    session, group1, = build_active_session
+    message = session.current_message
+    group1.players.each { |p| message.submissions.create!(player: p, word: "hello") }
+
+    session.complete_round!
+    events = session.complete_round!
+
+    assert_nil events
+    assert_equal "hello", message.reload.text
+    assert_equal 1, message.words.count
+  end
+
+  test "complete_round! completes the message and switches turn on END" do
+    session, group1, group2 = build_active_session
+    message = session.current_message
+    session.add_winning_word!("hello")
+    group1.players.each { |p| message.submissions.create!(player: p, word: "END") }
+
+    events = session.complete_round!
+
+    assert_equal group2, session.reload.current_turn_group
+    assert_equal %w[message_completed turn_switched], events.map { |e| e[:type] }
+    assert_equal "hello", events.first[:message_text]
+  end
+
+  test "complete_round! ends the game when END is the first word" do
+    session, group1, = build_active_session
+    message = session.current_message
+    group1.players.each { |p| message.submissions.create!(player: p, word: "END") }
+
+    events = session.complete_round!
+
+    assert session.reload.complete?
+    assert_equal "game_ended", events.first[:type]
+  end
 end

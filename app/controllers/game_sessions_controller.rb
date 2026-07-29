@@ -207,10 +207,9 @@ class GameSessionsController < ApplicationController
       word: word
     )
 
-    # Check if all group players have submitted
-    if @game_session.all_group_players_submitted?
-      process_round_completion
-    end
+    # Process the round if everyone has submitted (self-guarding)
+    events = @game_session.complete_round!
+    events&.each { |event| GameSessionChannel.broadcast_to(@game_session, event) }
 
     head :ok
   end
@@ -230,52 +229,5 @@ class GameSessionsController < ApplicationController
 
   def game_session_params
     params.permit(:time_limit_seconds)
-  end
-
-  def process_round_completion
-    winning_word = @game_session.determine_winner
-    current_message = @game_session.current_message
-
-    # Check for END keyword
-    if winning_word&.downcase == "end"
-      # If message is empty (END is first word), end the entire game
-      if current_message.words.empty?
-        @game_session.update!(status: :complete)
-        GameSessionChannel.broadcast_to(@game_session, {
-          type: "game_ended",
-          conversation: @game_session.conversation.map { |m| { group_name: m[:group].name, text: m[:text] } }
-        })
-      else
-        # Message complete, switch turns
-        current_group = @game_session.current_turn_group
-        GameSessionChannel.broadcast_to(@game_session, {
-          type: "message_completed",
-          group_id: current_group.id,
-          group_name: current_group.name,
-          message_text: current_message.text
-        })
-
-        @game_session.switch_turn!
-        @game_session.start_new_message!
-
-        GameSessionChannel.broadcast_to(@game_session, {
-          type: "turn_switched",
-          active_group_id: @game_session.current_turn_group.id,
-          active_group_name: @game_session.current_turn_group.name
-        })
-      end
-    else
-      @game_session.add_winning_word!(winning_word) if winning_word
-
-      # Clear this round's submissions so players can submit the next word
-      current_message.submissions.destroy_all
-
-      GameSessionChannel.broadcast_to(@game_session, {
-        type: "word_revealed",
-        word: winning_word,
-        group_id: @game_session.current_turn_group.id,
-        message_text: current_message.reload.text
-      })
-    end
   end
 end
