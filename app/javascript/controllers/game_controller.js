@@ -28,6 +28,9 @@ export default class extends Controller {
     if (this.statusValue === "active" && this.timeLimitValue > 0) {
       this.startTimer()
     }
+
+    // Show the most recent messages if the transcript already overflows
+    this.scrollTranscriptToBottom()
   }
 
   disconnect() {
@@ -138,6 +141,13 @@ export default class extends Controller {
 
       div.append(label, " ", text)
       this.chatTranscriptTarget.appendChild(div)
+      this.scrollTranscriptToBottom()
+    }
+  }
+
+  scrollTranscriptToBottom() {
+    if (this.hasChatTranscriptTarget) {
+      this.chatTranscriptTarget.scrollTop = this.chatTranscriptTarget.scrollHeight
     }
   }
 
