@@ -1,4 +1,4 @@
-# Word Ouija - Implementation Plan
+# Group Group Chat - Implementation Plan (original build)
 
 ## Tech Stack
 

@@ -1,7 +1,7 @@
 # Group Group Chat - Refactor Plan
 
 ## Concept
-Transform Word Ouija from a single group writing one message into two groups having a conversation with each other. Each group collaboratively authors messages one word at a time, taking turns in a back-and-forth chat.
+Transform the original single-group game, in which a single group writes one message, into two groups having a conversation with each other. Each group collaboratively authors messages one word at a time, taking turns in a back-and-forth chat.
 
 ---
 

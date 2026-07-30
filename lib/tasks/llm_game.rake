@@ -3,7 +3,7 @@
 require_relative '../openrouter_client'
 
 namespace :game do
-  desc 'Run an LLM vs LLM game of Word Ouija'
+  desc 'Run an LLM vs LLM game of Group Group Chat'
   task :llm, [:players_per_group, :model] => :environment do |_t, args|
     players_per_group = (args[:players_per_group] || 1).to_i
 
@@ -85,7 +85,7 @@ class LLMGameOrchestrator
   def print_header
     puts
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}╔════════════════════════════════════════╗#{COLORS[:reset]}"
-    puts "#{COLORS[:bold]}#{COLORS[:yellow]}║      🔮 Word Ouija: LLM Game 🔮        ║#{COLORS[:reset]}"
+    puts "#{COLORS[:bold]}#{COLORS[:yellow]}║    💬 Group Group Chat: LLM Game 💬    ║#{COLORS[:reset]}"
     puts "#{COLORS[:bold]}#{COLORS[:yellow]}╚════════════════════════════════════════╝#{COLORS[:reset]}"
     puts
     model_label = @models.size == 1 ? "Model: #{@models.first}" : "Models: #{@models.join(', ')}"
@@ -276,7 +276,7 @@ class LLMGameOrchestrator
     other_group = @groups.find { |g| g.id != player.group_id }
 
     prompt = <<~PROMPT
-      You are #{player.name}, playing Word Ouija - a game where your team writes chat messages ONE WORD AT A TIME.
+      You are #{player.name}, playing Group Group Chat - a game where your team writes chat messages ONE WORD AT A TIME.
       Your team "#{player.group.name}" is having a conversation with the team "#{other_group.name}".
       Each message must read as a natural, grammatical English sentence - not a list of related words.
 

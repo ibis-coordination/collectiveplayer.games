@@ -1,4 +1,4 @@
-# Word Ouija (Group Group Chat)
+# Group Group Chat
 
 A real-time collaborative chat game where two groups have a conversation with each other, composing messages one word at a time through anonymous voting.
 

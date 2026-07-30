@@ -1,7 +1,7 @@
-# Word Ouija - Product Specification
+# Group Group Chat - Original Product Specification
 
 ## Overview
-Word Ouija is a realtime collaborative writing game where participants collectively author a message one word at a time through anonymous voting. Similar to a Ouija board experience, the group guides the message together without seeing individual contributions until each word is revealed.
+The first version of Group Group Chat was a realtime collaborative writing game where participants collectively author a message one word at a time through anonymous voting. Like a Ouija board planchette guided by many hands, the group steers the message together without seeing individual contributions until each word is revealed.
 
 ## Core Concept
 - Players join a shared session
