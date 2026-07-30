@@ -37,6 +37,12 @@ bin/rails test test/models/game_session_test.rb:25
 bin/rails console
 ```
 
+## Design Priorities
+
+This game is primarily played on mobile devices. Prioritize mobile UX in all
+UI work: touch-friendly targets, small-viewport layouts, and testing at
+mobile screen sizes first.
+
 ## Project Overview
 
 Group Group Chat is a real-time collaborative chat game where two groups have a conversation with each other, composing messages one word at a time through anonymous voting. Built with Rails 8, Hotwire (Turbo + Stimulus), and ActionCable for WebSocket communication.
