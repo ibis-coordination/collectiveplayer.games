@@ -25,13 +25,48 @@ select {
   min-height: 44px;
 }
 
-/* iOS-dark palette (iMessage-like):
-   background #000, cards #1C1C1E, separators #3A3A3C,
-   secondary text #8E8E93, blue #0A84FF, green #30D158, red #FF453A */
+/* iOS system palette (iMessage-like), dark by default with a light
+   mode following the device's appearance setting */
+:root {
+  color-scheme: dark light;
+
+  --bg: #000;
+  --card: #1C1C1E;
+  --card-elevated: #2C2C2E;
+  --border: #3A3A3C;
+  --border-strong: #48484A;
+  --text: #fff;
+  --text-secondary: #8E8E93;
+  --blue: #0A84FF;
+  --blue-hover: #0870DD;
+  --green: #30D158;
+  --red: #FF453A;
+  --red-hover: #E0392F;
+  --bubble-other: #3A3A3C;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #fff;
+    --card: #F2F2F7;
+    --card-elevated: #E5E5EA;
+    --border: #D1D1D6;
+    --border-strong: #C7C7CC;
+    --text: #000;
+    --text-secondary: #8E8E93;
+    --blue: #007AFF;
+    --blue-hover: #0066D6;
+    --green: #34C759;
+    --red: #FF3B30;
+    --red-hover: #E0352B;
+    --bubble-other: #E9E9EB;
+  }
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: #000;
-  color: #fff;
+  background: var(--bg);
+  color: var(--text);
   min-height: 100vh;
   margin: 0;
   padding: 12px;
@@ -53,7 +88,7 @@ h1 {
 }
 
 .subtitle {
-  color: #8E8E93;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
 }
 
@@ -65,24 +100,24 @@ h1 {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #8E8E93;
+  color: var(--text-secondary);
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
   padding: 12px;
-  border: 1px solid #3A3A3C;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #1C1C1E;
-  color: #fff;
+  background: var(--card);
+  color: var(--text);
   font-size: 1rem;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #0A84FF;
+  border-color: var(--blue);
 }
 
 /* Buttons */
@@ -96,21 +131,21 @@ h1 {
 }
 
 .btn-primary {
-  background: #0A84FF;
+  background: var(--blue);
   color: white;
 }
 
 .btn-primary:hover {
-  background: #0870DD;
+  background: var(--blue-hover);
 }
 
 .btn-danger {
-  background: #FF453A;
+  background: var(--red);
   color: white;
 }
 
 .btn-danger:hover {
-  background: #E0392F;
+  background: var(--red-hover);
 }
 
 .btn-small {
@@ -136,7 +171,7 @@ h1 {
 
 /* Lobby */
 .session-info {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -151,19 +186,19 @@ h1 {
 .share-link input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #3A3A3C;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #2C2C2E;
-  color: #fff;
+  background: var(--card-elevated);
+  color: var(--text);
 }
 
 .session-code {
   font-size: 1.25rem;
-  color: #0A84FF;
+  color: var(--blue);
 }
 
 .players-list {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -177,7 +212,7 @@ h1 {
 
 .players-list li {
   padding: 8px 0;
-  border-bottom: 1px solid #2C2C2E;
+  border-bottom: 1px solid var(--card-elevated);
 }
 
 .players-list li:last-child {
@@ -185,18 +220,18 @@ h1 {
 }
 
 .setting {
-  color: #8E8E93;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
 }
 
 .waiting-message {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
 /* Active Game */
 .message-display {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 40px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -209,7 +244,7 @@ h1 {
 }
 
 .message-display .placeholder {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-style: italic;
 }
 
@@ -218,19 +253,19 @@ h1 {
 }
 
 @keyframes flash {
-  0% { background: #0A84FF; }
-  100% { background: #1C1C1E; }
+  0% { background: var(--blue); }
+  100% { background: var(--card); }
 }
 
 .timer {
   font-size: 1.25rem;
   font-weight: bold;
-  color: #0A84FF;
+  color: var(--blue);
   white-space: nowrap;
 }
 
 .timer .urgent {
-  color: #FF453A;
+  color: var(--red);
   animation: pulse 0.5s infinite;
 }
 
@@ -248,10 +283,10 @@ h1 {
 /* iMessage-style composer: pill-shaped field + round send button */
 .word-input input {
   padding: 10px 18px;
-  border: 1px solid #3A3A3C;
+  border: 1px solid var(--border);
   border-radius: 22px;
-  background: #1C1C1E;
-  color: #fff;
+  background: var(--card);
+  color: var(--text);
   font-size: 1.0625rem;
   flex: 1;
   min-width: 0;
@@ -259,7 +294,7 @@ h1 {
 
 .word-input input:focus {
   outline: none;
-  border-color: #0A84FF;
+  border-color: var(--blue);
 }
 
 .btn-send {
@@ -274,7 +309,7 @@ h1 {
 }
 
 .submitted-message {
-  color: #30D158;
+  color: var(--green);
   font-size: 1.0625rem;
 }
 
@@ -285,7 +320,7 @@ h1 {
 
 /* Complete */
 .final-message {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 40px;
   border-radius: 12px;
   margin: 2rem 0;
@@ -299,7 +334,7 @@ h1 {
 
 /* Flash messages */
 .alert {
-  background: #FF453A;
+  background: var(--red);
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
@@ -326,7 +361,7 @@ h1 {
 
 .group-column {
   flex: 1;
-  background: #1C1C1E;
+  background: var(--card);
   padding: 20px;
   border-radius: 12px;
   text-align: center;
@@ -342,15 +377,15 @@ h1 {
 }
 
 .group-name.empty {
-  color: #8E8E93;
+  color: var(--text-secondary);
 }
 
 .group-name-input {
-  background: #2C2C2E;
-  border: 1px solid #3A3A3C;
+  background: var(--card-elevated);
+  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 8px 12px;
-  color: #fff;
+  color: var(--text);
   font-size: 1.25rem;
   font-weight: bold;
   text-align: center;
@@ -359,7 +394,7 @@ h1 {
 
 .group-name-input:focus {
   outline: none;
-  border-color: #0A84FF;
+  border-color: var(--blue);
 }
 
 .group-players {
@@ -371,11 +406,11 @@ h1 {
 
 .group-players li {
   padding: 6px 0;
-  color: #ddd;
+  color: var(--text);
 }
 
 .empty-group {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-style: italic;
   min-height: 60px;
   display: flex;
@@ -384,21 +419,21 @@ h1 {
 }
 
 .in-group-label {
-  color: #30D158;
+  color: var(--green);
   font-weight: bold;
 }
 
 .btn-secondary {
-  background: #3A3A3C;
-  color: white;
+  background: var(--card-elevated);
+  color: var(--text);
 }
 
 .btn-secondary:hover {
-  background: #48484A;
+  background: var(--border);
 }
 
 .ungrouped-players {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 15px 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -406,7 +441,7 @@ h1 {
 
 .ungrouped-players h4 {
   margin: 0 0 10px 0;
-  color: #8E8E93;
+  color: var(--text-secondary);
 }
 
 .ungrouped-players ul {
@@ -418,7 +453,7 @@ h1 {
 .ungrouped-players li {
   display: inline-block;
   padding: 4px 12px;
-  background: #2C2C2E;
+  background: var(--card-elevated);
   border-radius: 20px;
   margin: 4px;
 }
@@ -459,7 +494,7 @@ h1 {
 }
 
 .turn-indicator {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 15px 20px;
   border-radius: 10px;
 }
@@ -507,7 +542,7 @@ h1 {
 
 .chat-message .group-label {
   display: block;
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   margin: 0 12px 3px;
 }
@@ -517,7 +552,7 @@ h1 {
 }
 
 .chat-message .bubble {
-  background: #3A3A3C;
+  background: var(--bubble-other);
   padding: 8px 14px;
   border-radius: 18px;
   width: fit-content;
@@ -525,7 +560,7 @@ h1 {
 }
 
 .chat-message.own-group .bubble {
-  background: #0A84FF;
+  background: var(--blue);
   margin-left: auto;
   border-bottom-right-radius: 4px;
 }
@@ -535,19 +570,24 @@ h1 {
 }
 
 .chat-message .message-text {
-  color: #fff;
+  color: var(--text);
   font-size: 1.0625rem;
   line-height: 1.35;
+}
+
+/* Own bubbles are blue in both modes, so their text is always white */
+.chat-message.own-group .message-text {
+  color: #fff;
 }
 
 /* The in-progress message renders as a dashed "typing" bubble aligned
    to whichever group is composing */
 .current-message-area {
-  background: #1C1C1E;
+  background: var(--card);
   padding: 10px 16px;
   border-radius: 18px;
   margin-bottom: 0.75rem;
-  border: 1.5px dashed #48484A;
+  border: 1.5px dashed var(--border-strong);
   max-width: 80%;
   min-width: 45%;
 }
@@ -568,13 +608,13 @@ h1 {
 
 .current-message .group-label {
   font-weight: bold;
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin-right: 8px;
 }
 
 .current-message .message-text {
-  color: #fff;
+  color: var(--text);
   font-size: 1.0625rem;
 }
 
@@ -583,18 +623,18 @@ h1 {
 }
 
 @keyframes text-flash {
-  0% { color: #30D158; }
-  100% { color: #fff; }
+  0% { color: var(--green); }
+  100% { color: var(--text); }
 }
 
 .waiting-turn {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-style: italic;
   padding: 20px;
 }
 
 .hint {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-size: 0.875rem;
   margin-top: 8px;
 }
@@ -618,7 +658,7 @@ h1 {
 }
 
 .empty-conversation {
-  color: #8E8E93;
+  color: var(--text-secondary);
   font-style: italic;
   text-align: center;
 }
