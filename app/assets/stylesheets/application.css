@@ -18,18 +18,35 @@
   box-sizing: border-box;
 }
 
+/* Mobile-first: every tap target at least 44px tall (Apple HIG minimum) */
+button,
+input,
+select {
+  min-height: 44px;
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
   color: #eee;
   min-height: 100vh;
   margin: 0;
-  padding: 20px;
+  padding: 12px;
 }
 
 h1 {
-  font-size: 2.5rem;
+  font-size: 1.875rem;
   margin-bottom: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  h1 {
+    font-size: 2.5rem;
+  }
+
+  body {
+    padding: 20px;
+  }
 }
 
 .subtitle {
@@ -233,7 +250,8 @@ h1 {
   background: #0f0f23;
   color: #eee;
   font-size: 1.25rem;
-  width: 300px;
+  flex: 1;
+  min-width: 0;
 }
 
 .word-input input:focus {
@@ -279,10 +297,18 @@ h1 {
 }
 
 /* Group Selection Lobby */
+/* Mobile-first: groups stack vertically; side-by-side only on wider screens */
 .groups-container {
   display: flex;
+  flex-direction: column;
   gap: 20px;
   margin: 2rem 0;
+}
+
+@media (min-width: 640px) {
+  .groups-container {
+    flex-direction: row;
+  }
 }
 
 .group-column {
@@ -477,6 +503,11 @@ h1 {
   color: #666;
   font-size: 0.875rem;
   margin-top: 8px;
+}
+
+/* Keep the word field and submit button on one row; hint wraps below */
+.word-input .hint {
+  flex-basis: 100%;
 }
 
 .word-input {
