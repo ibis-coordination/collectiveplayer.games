@@ -139,10 +139,20 @@ export default class extends Controller {
       text.className = "message-text"
       text.textContent = messageText
 
+      // Only snap to the new message if the user was already at the bottom;
+      // don't yank them away while they're scrolled up reading history
+      const wasAtBottom = this.transcriptNearBottom()
       div.append(label, " ", text)
       this.chatTranscriptTarget.appendChild(div)
-      this.scrollTranscriptToBottom()
+      if (wasAtBottom) this.scrollTranscriptToBottom()
     }
+  }
+
+  transcriptNearBottom() {
+    if (!this.hasChatTranscriptTarget) return false
+
+    const el = this.chatTranscriptTarget
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 40
   }
 
   scrollTranscriptToBottom() {
