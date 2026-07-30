@@ -103,11 +103,23 @@
   <% elsif @game_session.active? %>
     <!-- ACTIVE GAME VIEW -->
     <div class="game-active">
-      <div class="turn-indicator" data-game-target="turnIndicator">
-        <% if @game_session.current_turn_group == @current_player.group %>
-          <strong>Your group's turn!</strong> Compose a message together.
-        <% else %>
-          Waiting for <strong><%= @game_session.current_turn_group&.name %></strong> to compose their message...
+      <div class="chat-header">
+        <div class="turn-indicator" data-game-target="turnIndicator">
+          <% if @game_session.current_turn_group == @current_player.group %>
+            <strong>Your group's turn!</strong> Compose a message together.
+          <% else %>
+            Waiting for <strong><%= @game_session.current_turn_group&.name %></strong> to compose their message...
+          <% end %>
+        </div>
+        <% if @game_session.time_limit_seconds %>
+          <div class="timer" data-game-target="timer">
+            <span data-game-target="timerValue">--</span>s
+          </div>
+        <% end %>
+        <% if @current_player.host? %>
+          <%= button_to "End Game", end_game_game_session_path(@game_session.code), method: :post,
+                class: "btn btn-danger btn-end",
+                form: { data: { turbo_confirm: "End the game for everyone?" } } %>
         <% end %>
       </div>
 
@@ -123,7 +135,7 @@
       </div>
 
       <!-- Current Message Being Built -->
-      <div class="current-message-area">
+      <div class="current-message-area <%= @game_session.current_turn_group == @current_player.group ? "own-group" : "other-group" %>">
         <div class="current-message" data-game-target="currentMessage">
           <span class="group-label"><%= @game_session.current_turn_group&.name %>:</span>
           <span class="message-text" data-game-target="messageText">
@@ -131,12 +143,6 @@
           </span>
         </div>
       </div>
-
-      <% if @game_session.time_limit_seconds %>
-        <div class="timer" data-game-target="timer">
-          <span data-game-target="timerValue">--</span>s
-        </div>
-      <% end %>
 
       <% if @current_player.group.nil? %>
         <div class="spectator-banner">
@@ -166,12 +172,6 @@
           <div class="waiting-turn">
             <p>Watch the other group compose their message...</p>
           </div>
-        </div>
-      <% end %>
-
-      <% if @current_player.host? %>
-        <div class="host-controls">
-          <%= button_to "End Game", end_game_game_session_path(@game_session.code), method: :post, class: "btn btn-danger" %>
         </div>
       <% end %>
     </div>

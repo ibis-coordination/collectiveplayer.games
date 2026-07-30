@@ -177,10 +177,17 @@ export default class extends Controller {
       }
     }
 
-    // Update current message label
+    // Update current message label and realign its bubble to the
+    // now-composing group's side
     if (this.hasCurrentMessageTarget) {
       const labelEl = this.currentMessageTarget.querySelector('.group-label')
       if (labelEl) labelEl.textContent = `${activeGroupName}:`
+
+      const area = this.currentMessageTarget.closest('.current-message-area')
+      if (area) {
+        area.classList.toggle('own-group', isOurTurn)
+        area.classList.toggle('other-group', !isOurTurn)
+      }
     }
 
     // Clear current message text
