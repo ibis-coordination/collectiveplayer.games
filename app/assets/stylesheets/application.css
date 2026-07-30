@@ -25,10 +25,13 @@ select {
   min-height: 44px;
 }
 
+/* iOS-dark palette (iMessage-like):
+   background #000, cards #1C1C1E, separators #3A3A3C,
+   secondary text #8E8E93, blue #0A84FF, green #30D158, red #FF453A */
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-  color: #eee;
+  background: #000;
+  color: #fff;
   min-height: 100vh;
   margin: 0;
   padding: 12px;
@@ -50,7 +53,7 @@ h1 {
 }
 
 .subtitle {
-  color: #888;
+  color: #8E8E93;
   margin-bottom: 2rem;
 }
 
@@ -62,24 +65,24 @@ h1 {
 .form-group label {
   display: block;
   margin-bottom: 0.5rem;
-  color: #aaa;
+  color: #8E8E93;
 }
 
 .form-group input,
 .form-group select {
   width: 100%;
   padding: 12px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #0f0f23;
-  color: #eee;
+  border: 1px solid #3A3A3C;
+  border-radius: 10px;
+  background: #1C1C1E;
+  color: #fff;
   font-size: 1rem;
 }
 
 .form-group input:focus,
 .form-group select:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #0A84FF;
 }
 
 /* Buttons */
@@ -93,21 +96,21 @@ h1 {
 }
 
 .btn-primary {
-  background: #6366f1;
+  background: #0A84FF;
   color: white;
 }
 
 .btn-primary:hover {
-  background: #4f46e5;
+  background: #0870DD;
 }
 
 .btn-danger {
-  background: #dc2626;
+  background: #FF453A;
   color: white;
 }
 
 .btn-danger:hover {
-  background: #b91c1c;
+  background: #E0392F;
 }
 
 .btn-small {
@@ -133,7 +136,7 @@ h1 {
 
 /* Lobby */
 .session-info {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -148,19 +151,19 @@ h1 {
 .share-link input {
   flex: 1;
   padding: 10px;
-  border: 1px solid #333;
-  border-radius: 8px;
-  background: #1a1a2e;
-  color: #eee;
+  border: 1px solid #3A3A3C;
+  border-radius: 10px;
+  background: #2C2C2E;
+  color: #fff;
 }
 
 .session-code {
   font-size: 1.25rem;
-  color: #6366f1;
+  color: #0A84FF;
 }
 
 .players-list {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -174,7 +177,7 @@ h1 {
 
 .players-list li {
   padding: 8px 0;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid #2C2C2E;
 }
 
 .players-list li:last-child {
@@ -182,18 +185,18 @@ h1 {
 }
 
 .setting {
-  color: #888;
+  color: #8E8E93;
   margin-bottom: 2rem;
 }
 
 .waiting-message {
-  color: #888;
+  color: #8E8E93;
   font-style: italic;
 }
 
 /* Active Game */
 .message-display {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 40px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -206,7 +209,7 @@ h1 {
 }
 
 .message-display .placeholder {
-  color: #555;
+  color: #8E8E93;
   font-style: italic;
 }
 
@@ -215,19 +218,19 @@ h1 {
 }
 
 @keyframes flash {
-  0% { background: #6366f1; }
-  100% { background: #0f0f23; }
+  0% { background: #0A84FF; }
+  100% { background: #1C1C1E; }
 }
 
 .timer {
   font-size: 1.25rem;
   font-weight: bold;
-  color: #6366f1;
+  color: #0A84FF;
   white-space: nowrap;
 }
 
 .timer .urgent {
-  color: #dc2626;
+  color: #FF453A;
   animation: pulse 0.5s infinite;
 }
 
@@ -242,25 +245,37 @@ h1 {
   justify-content: center;
 }
 
+/* iMessage-style composer: pill-shaped field + round send button */
 .word-input input {
-  padding: 16px;
-  border: 2px solid #333;
-  border-radius: 8px;
-  background: #0f0f23;
-  color: #eee;
-  font-size: 1.25rem;
+  padding: 10px 18px;
+  border: 1px solid #3A3A3C;
+  border-radius: 22px;
+  background: #1C1C1E;
+  color: #fff;
+  font-size: 1.0625rem;
   flex: 1;
   min-width: 0;
 }
 
 .word-input input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #0A84FF;
+}
+
+.btn-send {
+  flex: none;
+  width: 44px;
+  min-width: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.4rem;
+  line-height: 1;
+  align-self: center;
 }
 
 .submitted-message {
-  color: #22c55e;
-  font-size: 1.25rem;
+  color: #30D158;
+  font-size: 1.0625rem;
 }
 
 .btn-end {
@@ -270,7 +285,7 @@ h1 {
 
 /* Complete */
 .final-message {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 40px;
   border-radius: 12px;
   margin: 2rem 0;
@@ -284,7 +299,7 @@ h1 {
 
 /* Flash messages */
 .alert {
-  background: #dc2626;
+  background: #FF453A;
   color: white;
   padding: 12px 20px;
   border-radius: 8px;
@@ -311,7 +326,7 @@ h1 {
 
 .group-column {
   flex: 1;
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 20px;
   border-radius: 12px;
   text-align: center;
@@ -327,15 +342,15 @@ h1 {
 }
 
 .group-name.empty {
-  color: #555;
+  color: #8E8E93;
 }
 
 .group-name-input {
-  background: #1a1a2e;
-  border: 1px solid #333;
-  border-radius: 8px;
+  background: #2C2C2E;
+  border: 1px solid #3A3A3C;
+  border-radius: 10px;
   padding: 8px 12px;
-  color: #eee;
+  color: #fff;
   font-size: 1.25rem;
   font-weight: bold;
   text-align: center;
@@ -344,7 +359,7 @@ h1 {
 
 .group-name-input:focus {
   outline: none;
-  border-color: #6366f1;
+  border-color: #0A84FF;
 }
 
 .group-players {
@@ -356,11 +371,11 @@ h1 {
 
 .group-players li {
   padding: 6px 0;
-  color: #ccc;
+  color: #ddd;
 }
 
 .empty-group {
-  color: #555;
+  color: #8E8E93;
   font-style: italic;
   min-height: 60px;
   display: flex;
@@ -369,21 +384,21 @@ h1 {
 }
 
 .in-group-label {
-  color: #22c55e;
+  color: #30D158;
   font-weight: bold;
 }
 
 .btn-secondary {
-  background: #374151;
+  background: #3A3A3C;
   color: white;
 }
 
 .btn-secondary:hover {
-  background: #4b5563;
+  background: #48484A;
 }
 
 .ungrouped-players {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 15px 20px;
   border-radius: 12px;
   margin-bottom: 2rem;
@@ -391,7 +406,7 @@ h1 {
 
 .ungrouped-players h4 {
   margin: 0 0 10px 0;
-  color: #888;
+  color: #8E8E93;
 }
 
 .ungrouped-players ul {
@@ -403,7 +418,7 @@ h1 {
 .ungrouped-players li {
   display: inline-block;
   padding: 4px 12px;
-  background: #1a1a2e;
+  background: #2C2C2E;
   border-radius: 20px;
   margin: 4px;
 }
@@ -444,64 +459,95 @@ h1 {
 }
 
 .turn-indicator {
-  background: #0f0f23;
+  background: #1C1C1E;
   padding: 15px 20px;
-  border-radius: 8px;
+  border-radius: 10px;
 }
 
+/* iMessage-style: messages sit directly on the black background;
+   the transcript is just the scrolling region, with messages anchored
+   to the bottom like a real chat */
 .chat-transcript {
-  background: #0a0a1a;
-  padding: 16px;
-  border-radius: 12px;
+  padding: 8px 2px;
   margin-bottom: 0.75rem;
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   text-align: left;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-/* Chat bubbles: sized to their content, own messages on the right,
-   the other group's on the left */
+.chat-transcript > :first-child {
+  margin-top: auto;
+}
+
+.chat-transcript .chat-message.own-group {
+  align-self: flex-end;
+}
+
+/* Chat bubbles: sized to their content, own messages on the right in
+   iMessage blue, the other group's on the left in gray. The sender
+   label sits above the bubble (and is hidden for your own group,
+   just like iMessage). */
 .chat-message {
-  padding: 10px 14px;
   margin-bottom: 10px;
-  border-radius: 16px;
   max-width: 80%;
   width: fit-content;
 }
 
 .chat-message.own-group {
-  background: #1e3a5f;
+  margin-left: auto;
+}
+
+.chat-message.other-group {
+  margin-right: auto;
+}
+
+.chat-message .group-label {
+  display: block;
+  color: #8E8E93;
+  font-size: 0.75rem;
+  margin: 0 12px 3px;
+}
+
+.chat-message.own-group .group-label {
+  display: none;
+}
+
+.chat-message .bubble {
+  background: #3A3A3C;
+  padding: 8px 14px;
+  border-radius: 18px;
+  width: fit-content;
+  max-width: 100%;
+}
+
+.chat-message.own-group .bubble {
+  background: #0A84FF;
   margin-left: auto;
   border-bottom-right-radius: 4px;
 }
 
-.chat-message.other-group {
-  background: #3d1f5c;
-  margin-right: auto;
+.chat-message.other-group .bubble {
   border-bottom-left-radius: 4px;
 }
 
-.chat-message .group-label {
-  font-weight: bold;
-  color: #aaa;
-  display: block;
-  margin-bottom: 4px;
-  font-size: 0.875rem;
-}
-
 .chat-message .message-text {
-  color: #eee;
+  color: #fff;
+  font-size: 1.0625rem;
+  line-height: 1.35;
 }
 
 /* The in-progress message renders as a dashed "typing" bubble aligned
    to whichever group is composing */
 .current-message-area {
-  background: #0f0f23;
-  padding: 12px 16px;
-  border-radius: 16px;
+  background: #1C1C1E;
+  padding: 10px 16px;
+  border-radius: 18px;
   margin-bottom: 0.75rem;
-  border: 2px dashed #444;
+  border: 1.5px dashed #48484A;
   max-width: 80%;
   min-width: 45%;
 }
@@ -522,13 +568,14 @@ h1 {
 
 .current-message .group-label {
   font-weight: bold;
-  color: #6366f1;
+  color: #8E8E93;
+  font-size: 0.875rem;
   margin-right: 8px;
 }
 
 .current-message .message-text {
-  color: #eee;
-  font-size: 1.25rem;
+  color: #fff;
+  font-size: 1.0625rem;
 }
 
 .current-message .message-text.flash {
@@ -536,18 +583,18 @@ h1 {
 }
 
 @keyframes text-flash {
-  0% { color: #22c55e; }
-  100% { color: #eee; }
+  0% { color: #30D158; }
+  100% { color: #fff; }
 }
 
 .waiting-turn {
-  color: #888;
+  color: #8E8E93;
   font-style: italic;
   padding: 20px;
 }
 
 .hint {
-  color: #666;
+  color: #8E8E93;
   font-size: 0.875rem;
   margin-top: 8px;
 }
@@ -563,9 +610,7 @@ h1 {
 
 /* Final Conversation */
 .final-conversation {
-  background: #0a0a1a;
-  padding: 20px;
-  border-radius: 12px;
+  padding: 8px 2px;
   margin: 2rem 0;
   text-align: left;
   max-height: 400px;
@@ -573,7 +618,7 @@ h1 {
 }
 
 .empty-conversation {
-  color: #555;
+  color: #8E8E93;
   font-style: italic;
   text-align: center;
 }

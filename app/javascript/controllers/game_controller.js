@@ -107,7 +107,7 @@ export default class extends Controller {
                data-action="keydown.enter->game#submitWord"
                placeholder="Enter your word..."
                autofocus>
-        <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+        <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Send word">&uarr;</button>
         <p class="hint">Type "END" to finish your message</p>
       `
       // Focus the new input
@@ -133,16 +133,20 @@ export default class extends Controller {
       // and must never be injected as HTML
       const label = document.createElement("span")
       label.className = "group-label"
-      label.textContent = `${groupName}:`
+      label.textContent = groupName
 
       const text = document.createElement("span")
       text.className = "message-text"
       text.textContent = messageText
 
+      const bubble = document.createElement("div")
+      bubble.className = "bubble"
+      bubble.appendChild(text)
+
       // Only snap to the new message if the user was already at the bottom;
       // don't yank them away while they're scrolled up reading history
       const wasAtBottom = this.transcriptNearBottom()
-      div.append(label, " ", text)
+      div.append(label, bubble)
       this.chatTranscriptTarget.appendChild(div)
       if (wasAtBottom) this.scrollTranscriptToBottom()
     }
@@ -204,7 +208,7 @@ export default class extends Controller {
                  data-action="keydown.enter->game#submitWord"
                  placeholder="Enter your word..."
                  autofocus>
-          <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+          <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Send word">&uarr;</button>
           <p class="hint">Type "END" to finish your message</p>
         `
         const newInput = this.wordInputTarget.querySelector("input")

@@ -128,8 +128,8 @@
         <% @game_session.conversation.each do |msg| %>
           <% next if msg[:text].blank? %>
           <div class="chat-message <%= msg[:group] == @current_player.group ? 'own-group' : 'other-group' %>">
-            <span class="group-label"><%= msg[:group].name %>:</span>
-            <span class="message-text"><%= msg[:text] %></span>
+            <span class="group-label"><%= msg[:group].name %></span>
+            <div class="bubble"><span class="message-text"><%= msg[:text] %></span></div>
           </div>
         <% end %>
       </div>
@@ -161,7 +161,7 @@
                    data-action="keydown.enter->game#submitWord"
                    placeholder="Enter your word..."
                    autofocus>
-            <button data-action="click->game#submitWord" class="btn btn-primary">Submit</button>
+            <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Send word">&uarr;</button>
             <p class="hint">Type "END" to finish your message</p>
           <% end %>
         </div>
@@ -185,8 +185,8 @@
         <% @game_session.conversation.each do |msg| %>
           <% next if msg[:text].blank? %>
           <div class="chat-message">
-            <span class="group-label"><%= msg[:group].name %>:</span>
-            <span class="message-text"><%= msg[:text] %></span>
+            <span class="group-label"><%= msg[:group].name %></span>
+            <div class="bubble"><span class="message-text"><%= msg[:text] %></span></div>
           </div>
         <% end %>
         <% if @game_session.conversation.empty? || @game_session.conversation.all? { |m| m[:text].blank? } %>

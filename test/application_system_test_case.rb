@@ -19,4 +19,8 @@ end
 
 class ApplicationSystemTestCase < ActionDispatch::SystemTestCase
   driven_by :mobile_playwright
+
+  # Parallel workers can be slow on first page load (cold asset builds);
+  # the default 2s wait is too tight and produces flaky failures
+  Capybara.default_max_wait_time = 5
 end
