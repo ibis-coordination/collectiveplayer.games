@@ -24,8 +24,15 @@ bin/rails db:create db:migrate
 # Run development server
 bin/rails server
 
-# Run all tests
+# Run all tests (models, controllers, channels, integration)
 bin/rails test
+
+# Run system tests (real browser via Playwright, mobile viewport by default)
+# One-time setup: npm install && npx playwright install chromium
+bin/rails test:system
+
+# Run everything
+bin/rails test:all
 
 # Run a single test file
 bin/rails test test/models/game_session_test.rb

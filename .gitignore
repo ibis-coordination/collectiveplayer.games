@@ -38,5 +38,8 @@
 # Ignore master key for decrypting credentials and more.
 /config/master.key
 
+# Node dependencies (Playwright CLI for system tests)
+/node_modules
+
 # macOS
 .DS_Store

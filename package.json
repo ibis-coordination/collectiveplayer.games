@@ -1,0 +1,8 @@
+{
+  "name": "word-ouija",
+  "private": true,
+  "description": "Playwright CLI for Rails system tests (capybara-playwright-driver). Run `npm install && npx playwright install chromium` to set up.",
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}
