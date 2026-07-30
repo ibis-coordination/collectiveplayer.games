@@ -327,6 +327,25 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     assert_match "spectating", response.body
   end
 
+  # Regression: the waiting-for-other-group view must still render the
+  # wordInput target. The JS injects the word input into that target when the
+  # turn switches; without it, the second group never gets an input box and
+  # can never submit.
+  test "inactive group player still has the wordInput target for turn switches" do
+    game_session = create_game_as_host
+    group1 = game_session.groups.create!(name: "Team A")
+    group2 = game_session.groups.create!(name: "Team B")
+    host = game_session.players.first
+    host.update!(group: group2) # host's group is NOT the active group
+    game_session.players.create!(name: "P1", group: group1)
+    game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
+
+    get game_session_path(game_session.code)
+
+    assert_response :ok
+    assert_select "[data-game-target=wordInput]"
+  end
+
   # ============= SUBMIT_WORD =============
 
   test "submit_word creates submission for active group player" do

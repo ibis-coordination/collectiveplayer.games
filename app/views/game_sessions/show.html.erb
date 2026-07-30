@@ -160,8 +160,12 @@
           <% end %>
         </div>
       <% else %>
-        <div class="waiting-turn">
-          <p>Watch the other group compose their message...</p>
+        <%# Keep the wordInput target here: the JS swaps the word input %>
+        <%# in and out of this container when the turn switches %>
+        <div class="word-input" data-game-target="wordInput">
+          <div class="waiting-turn">
+            <p>Watch the other group compose their message...</p>
+          </div>
         </div>
       <% end %>
 
