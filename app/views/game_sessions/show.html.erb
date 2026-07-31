@@ -156,13 +156,17 @@
           <% if @game_session.player_submitted?(@current_player) %>
             <p class="submitted-message">Word submitted! Waiting for teammates...</p>
           <% else %>
-            <input type="text"
-                   data-game-target="wordField"
-                   data-action="keydown.enter->game#submitWord"
-                   placeholder="Enter your word..."
-                   autofocus>
-            <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Send word">&uarr;</button>
-            <p class="hint">Type "END" to finish your message</p>
+            <button type="button"
+                    class="btn-send-message"
+                    data-action="click->game#sendMessage">Send Message &#9654;</button>
+            <div class="word-input-row">
+              <input type="text"
+                     data-game-target="wordField"
+                     data-action="keydown.enter->game#submitWord"
+                     placeholder="Add a word..."
+                     autofocus>
+              <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Add word">&uarr;</button>
+            </div>
           <% end %>
         </div>
       <% else %>

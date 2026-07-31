@@ -102,13 +102,15 @@ export default class extends Controller {
     // Reset word input if it's our turn
     if (this.playerGroupIdValue === groupId && this.hasWordInputTarget) {
       this.wordInputTarget.innerHTML = `
-        <input type="text"
-               data-game-target="wordField"
-               data-action="keydown.enter->game#submitWord"
-               placeholder="Enter your word..."
-               autofocus>
-        <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Send word">&uarr;</button>
-        <p class="hint">Type "END" to finish your message</p>
+        <button type="button" class="btn-send-message" data-action="click->game#sendMessage">Send Message &#9654;</button>
+        <div class="word-input-row">
+          <input type="text"
+                 data-game-target="wordField"
+                 data-action="keydown.enter->game#submitWord"
+                 placeholder="Add a word..."
+                 autofocus>
+          <button data-action="click->game#submitWord" class="btn btn-primary btn-send" aria-label="Add word">&uarr;</button>
+        </div>
       `
       // Focus the new input
       const newInput = this.wordInputTarget.querySelector("input")
@@ -235,16 +237,35 @@ export default class extends Controller {
     const word = this.wordFieldTarget.value.trim()
     if (!word) return
 
-    // Send via ActionCable
+    this.sendVote(word)
+  }
+
+  // Send Message is a labeled shortcut for submitting END. On an empty
+  // in-progress message, that would end the whole game, so confirm first.
+  sendMessage() {
+    if (this.currentMessageIsEmpty()) {
+      if (!window.confirm("The message is still empty. Sending it now will end the game. Are you sure?")) {
+        return
+      }
+    }
+    this.sendVote("END")
+  }
+
+  sendVote(word) {
     this.subscription.perform("submit_word", {
       word: word,
       player_token: this.playerTokenValue
     })
 
-    // Update UI to show submitted
     if (this.hasWordInputTarget) {
       this.wordInputTarget.innerHTML = '<p class="submitted-message">Word submitted! Waiting for teammates...</p>'
     }
+  }
+
+  currentMessageIsEmpty() {
+    if (!this.hasMessageTextTarget) return true
+    const text = this.messageTextTarget.textContent.trim()
+    return text === "" || text === "..."
   }
 
   updateGroupName(event) {

@@ -55,13 +55,14 @@ class MobileLayoutTest < ApplicationSystemTestCase
     assert_no_horizontal_overflow
     assert_touch_friendly_controls
 
-    # Input and submit button belong on the same row, not wrapped
+    # The word field and its add-word button belong on the same row, not
+    # wrapped. (The Send Message pill sits on its own row above them.)
     input_top, button_top = page.evaluate_script(<<~JS)
-      [document.querySelector('.word-input input').getBoundingClientRect().top,
-       document.querySelector('.word-input button').getBoundingClientRect().top]
+      [document.querySelector('.word-input-row input').getBoundingClientRect().top,
+       document.querySelector('.word-input-row button').getBoundingClientRect().top]
     JS
     assert_in_delta input_top, button_top, 1.0,
-      "word field (top #{input_top}) and submit button (top #{button_top}) should share a row"
+      "word field (top #{input_top}) and add-word button (top #{button_top}) should share a row"
   end
 
   private

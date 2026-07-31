@@ -274,10 +274,38 @@ h1 {
   50% { opacity: 0.5; }
 }
 
+/* Composer: a vertical stack of the small "Send Message" pill above
+   and the input+add-word row below */
 .word-input {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.word-input-row {
+  display: flex;
   gap: 10px;
-  justify-content: center;
+  align-items: center;
+}
+
+/* Small pill above the composer for finishing the current message.
+   Sits to the right so it doesn't compete with the primary "add word"
+   button below it. */
+.btn-send-message {
+  align-self: flex-end;
+  padding: 8px 18px;
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--blue);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-send-message:hover {
+  background: color-mix(in srgb, var(--blue) 12%, transparent);
 }
 
 /* iMessage-style composer: pill-shaped field + round send button */
