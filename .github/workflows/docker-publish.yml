@@ -63,7 +63,12 @@ jobs:
           context: .
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          # `service=…` is what Kamal keys on to find its own containers;
+          # `bin/kamal deploy` adds it automatically for local builds, but
+          # CI-built images have to set it explicitly.
+          labels: |
+            ${{ steps.meta.outputs.labels }}
+            service=collectiveplayer-games
           platforms: linux/amd64
           # GitHub Actions cache — first build is slow, subsequent builds
           # skip unchanged layers (usually just app code changes)

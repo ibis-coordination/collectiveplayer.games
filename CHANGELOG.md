@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] - 2026-08-04
+
+### Fixed
+
+- **CI-built images now carry the `service=collectiveplayer-games` label** so Kamal can find and manage its containers. `bin/kamal deploy` (local build) added the label automatically; `docker/build-push-action` did not, and `bin/kamal ship --version=0.1.0` refused to deploy the pulled image.
+
 ## [0.1.0] - 2026-08-03
 
 Initial release. Ships the **Collective Player Games** platform with one game (**Group Group Chat**), deployable to a VPS via Kamal.
