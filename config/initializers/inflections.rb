@@ -14,3 +14,10 @@
 # ActiveSupport::Inflector.inflections(:en) do |inflect|
 #   inflect.acronym "RESTful"
 # end
+
+# Tell Zeitwerk that lib/openrouter_client.rb defines OpenRouterClient
+# (not OpenrouterClient). Only matters in production, where eager-loading
+# enforces the file-to-constant convention.
+Rails.autoloaders.each do |loader|
+  loader.inflector.inflect("openrouter_client" => "OpenRouterClient")
+end
