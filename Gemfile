@@ -8,11 +8,21 @@ gem "rails", "~> 8.0"
 # The original asset pipeline for Rails [https://github.com/rails/sprockets-rails]
 gem "sprockets-rails"
 
-# Use sqlite3 as the database for Active Record
-gem "sqlite3", ">= 2.1"
+# SQLite in development/test; Postgres in production (see database.yml)
+gem "sqlite3", ">= 2.1", group: [:development, :test]
+gem "pg", "~> 1.5", group: :production
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", ">= 5.0"
+
+# ActionCable adapter that uses Postgres NOTIFY/LISTEN instead of Redis
+gem "solid_cable"
+
+# Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
+gem "kamal", require: false
+
+# Reduces disk IO in the container by writing tmpfs; used by Kamal
+gem "thruster", require: false
 
 # Use JavaScript with ESM import maps [https://github.com/rails/importmap-rails]
 gem "importmap-rails"

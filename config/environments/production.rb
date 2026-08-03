@@ -36,14 +36,17 @@ Rails.application.configure do
   # config.action_dispatch.x_sendfile_header = "X-Sendfile" # for Apache
   # config.action_dispatch.x_sendfile_header = "X-Accel-Redirect" # for NGINX
 
-  # Mount Action Cable outside main process or domain.
-  # config.action_cable.mount_path = nil
-  # config.action_cable.url = "wss://example.com/cable"
-  # config.action_cable.allowed_request_origins = [ "http://example.com", /http:\/\/example.*/ ]
+  # WebSocket origin must match the public host so ActionCable
+  # doesn't reject upgrades from collectiveplayer.games.
+  config.action_cable.allowed_request_origins = [
+    "https://collectiveplayer.games",
+    "https://www.collectiveplayer.games",
+    %r{https://.*\.collectiveplayer\.games}
+  ]
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  # Can be used together with config.force_ssl for Strict-Transport-Security and secure cookies.
-  # config.assume_ssl = true
+  # Kamal Proxy terminates SSL and forwards HTTP; assume_ssl lets Rails
+  # treat those requests as HTTPS (so force_ssl doesn't redirect-loop).
+  config.assume_ssl = true
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
   config.force_ssl = true
@@ -78,11 +81,14 @@ Rails.application.configure do
   # Do not dump schema after migrations.
   config.active_record.dump_schema_after_migration = false
 
-  # Enable DNS rebinding protection and other `Host` header attacks.
-  # config.hosts = [
-  #   "example.com",     # Allow requests from example.com
-  #   /.*\.example\.com/ # Allow requests from subdomains like `www.example.com`
-  # ]
-  # Skip DNS rebinding protection for the default health check endpoint.
-  # config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+  # Enable DNS rebinding protection: only accept requests for the
+  # public host (Kamal Proxy passes the original Host header through).
+  config.hosts = [
+    "collectiveplayer.games",
+    "www.collectiveplayer.games",
+    /.*\.collectiveplayer\.games/
+  ]
+  # Kamal Proxy health-checks hit /up with a container-IP Host header
+  # that won't match the allowlist above — let those through.
+  config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
 end

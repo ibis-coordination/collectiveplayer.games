@@ -1,0 +1,66 @@
+# Kamal deploy config for Collective Player Games (collectiveplayer.games).
+# Fill in the VPS IP under `servers:` before first deploy.
+
+service: collectiveplayer-games
+
+# Image built and pushed to GitHub Container Registry
+image: ibis-coordination/collectiveplayer.games
+
+servers:
+  web:
+    - YOUR_VPS_IP    # <-- fill in after provisioning the VPS
+
+# Kamal Proxy terminates SSL and multiplexes multiple apps on the same
+# host. Certs come from Let's Encrypt automatically once DNS for
+# collectiveplayer.games points at this server.
+proxy:
+  ssl: true
+  host: collectiveplayer.games
+  # The app container listens on 80 (via Thruster in front of Puma).
+  # app_port: 80
+
+registry:
+  server: ghcr.io
+  username: ibis-coordination
+  password:
+    - KAMAL_REGISTRY_PASSWORD    # a GitHub PAT with write:packages
+
+# ARM builds fail with libpq on Apple Silicon → build linux/amd64 to
+# match the VPS. If your VPS is ARM, change this to arm64.
+builder:
+  arch: amd64
+
+env:
+  clear:
+    # Reach the Postgres accessory over Docker's shared kamal network.
+    DATABASE_URL: postgres://collectiveplayer_games:${POSTGRES_PASSWORD}@collectiveplayer-games-db:5432/collectiveplayer_games
+    RAILS_LOG_TO_STDOUT: "true"
+    RAILS_SERVE_STATIC_FILES: "true"
+  secret:
+    - RAILS_MASTER_KEY
+    - POSTGRES_PASSWORD
+
+# Convenience shell/logs/console shortcuts:
+#   bin/kamal shell     → bash in the app container
+#   bin/kamal console   → rails console
+#   bin/kamal dbc       → psql shell against the app DB
+aliases:
+  shell: app exec --interactive --reuse "bash"
+  console: app exec --interactive --reuse "bin/rails console"
+  dbc: app exec --interactive --reuse "bin/rails dbconsole"
+
+# Postgres runs as a Kamal accessory alongside the app on the same VPS.
+# Data persists in the `db-data` named volume; backups are your job.
+accessories:
+  db:
+    image: postgres:17-alpine
+    host: YOUR_VPS_IP    # <-- same VPS as the app
+    port: "127.0.0.1:5432:5432"    # only reachable from localhost on the host
+    env:
+      clear:
+        POSTGRES_USER: collectiveplayer_games
+        POSTGRES_DB: collectiveplayer_games
+      secret:
+        - POSTGRES_PASSWORD
+    directories:
+      - db-data:/var/lib/postgresql/data
