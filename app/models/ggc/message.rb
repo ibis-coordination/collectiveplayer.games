@@ -1,7 +1,5 @@
 module Ggc
   class Message < ApplicationRecord
-    self.table_name = "messages"
-
     belongs_to :game_session
     belongs_to :group
     has_many :words, dependent: :destroy

@@ -1,7 +1,5 @@
 module Ggc
   class Player < ApplicationRecord
-    self.table_name = "players"
-
     belongs_to :game_session
     belongs_to :group, optional: true
     has_many :submissions, dependent: :destroy

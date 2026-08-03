@@ -1,7 +1,5 @@
 module Ggc
   class Submission < ApplicationRecord
-    self.table_name = "submissions"
-
     belongs_to :message
     belongs_to :player
 

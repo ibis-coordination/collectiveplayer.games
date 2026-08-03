@@ -1,7 +1,5 @@
 module Ggc
   class GameSession < ApplicationRecord
-    self.table_name = "game_sessions"
-
     has_many :players, dependent: :destroy
     has_many :groups, dependent: :destroy
     has_many :messages, dependent: :destroy

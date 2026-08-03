@@ -1,7 +1,5 @@
 module Ggc
   class Word < ApplicationRecord
-    self.table_name = "words"
-
     belongs_to :message
 
     validates :text, presence: true
