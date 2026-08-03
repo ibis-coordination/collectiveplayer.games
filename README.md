@@ -1,68 +1,80 @@
-# Group Group Chat
+# Collective Player Games
 
-A real-time collaborative chat game where two groups have a conversation with each other, composing messages one word at a time through anonymous voting.
+A small platform for collective-player games — games where several people jointly control a single character, rather than each person controlling their own. Each game uses some mechanism (voting, aggregation, sampling) to combine individual inputs into a single group action. See [danallison.info/writings/collective-player-games](https://danallison.info/writings/collective-player-games) for the concept.
 
-## How It Works
+Runs at [collectiveplayer.games](https://collectiveplayer.games). The landing page lists the available games; each game lives at its own path.
 
-1. **Create a Game**: Host creates a session and shares the 6-character code
-2. **Join Groups**: Players join via link and choose which team to join
-3. **Name Your Team**: Each group picks their own name
-4. **Play**: Teams take turns composing messages word-by-word
+## Games
+
+### Group Group Chat — `/ggc`
+
+Two groups have a real-time conversation. Each group composes its messages one word at a time by anonymous vote.
+
+1. Host creates a session, shares the 6-character code
+2. Players join via the link and pick a team
+3. Each group names itself
+4. Teams take turns composing messages word-by-word
    - Each player secretly submits a word
    - Most-voted word wins (random tiebreaker)
-   - Type "END" to finish your message and pass to the other team
-5. **End**: Game ends when a team's entire message is just "END"
+   - Tap **Send Message** (or vote for "END") to finish a message and pass to the other team
+5. Game ends when a team's next message would be empty (an immediate END)
 
-## Setup
+## Development
 
 ```bash
-# Install dependencies
 bundle install
-
-# Create and setup database
 bin/rails db:create db:migrate
-
-# Start the server
 bin/rails server
 ```
 
-Visit `http://localhost:3000` to play.
+Visit `http://localhost:3000`. The landing page links to Group Group Chat at `/ggc`.
 
-## Running Tests
+### Tests
 
 ```bash
-bin/rails test
+bin/rails test          # models, controllers, channels, integration
+bin/rails test:system   # real-browser mobile viewport via Playwright
+bin/rails test:all      # everything
 ```
 
-## LLM vs LLM Mode
-
-Watch AI players play the game via [OpenRouter](https://openrouter.ai), which gives access to a variety of models through one API.
+One-time Playwright setup (system tests):
 
 ```bash
-# Add your API key (get one at https://openrouter.ai/keys) to .env:
+npm install
+npx playwright install chromium
+```
+
+## Group Group Chat: LLM vs LLM
+
+Watch AI players play a game via [OpenRouter](https://openrouter.ai), which fronts many models behind one API.
+
+```bash
 cp .env.example .env  # then fill in OPENROUTER_API_KEY
 
-# Basic 1v1 game (uses Claude Haiku by default)
+# Basic 1v1 (Claude Haiku by default)
 rake game:llm
 
-# 2v2 game (2 LLM players per team)
+# 2v2 (2 LLM players per team)
 rake game:llm[2]
 
 # Use any OpenRouter model (see https://openrouter.ai/models)
 rake "game:llm[1,openai/gpt-4o-mini]"
-rake "game:llm[2,meta-llama/llama-3.3-70b-instruct]"
 
-# Mix models: list several and they're assigned to players round-robin
-# (3v3 where each of the 6 players is a different model)
-rake "game:llm[3,anthropic/claude-haiku-4.5,openai/gpt-4o-mini,google/gemini-2.5-flash,meta-llama/llama-3.3-70b-instruct,mistralai/mistral-nemo,deepseek/deepseek-chat]"
+# Mix models: they're assigned to players round-robin
+rake "game:llm[3,anthropic/claude-haiku-4.5,openai/gpt-4o-mini,google/gemini-2.5-flash]"
 ```
 
 Press `Ctrl+C` to end the game early.
 
-## Tech Stack
+## Adding a new game
+
+Group Group Chat is Ruby-namespaced under `Ggc::` (models, controllers, channel, views under `app/views/ggc/`, tables prefixed `ggc_`, mounted at `/ggc/*`). A new game follows the same pattern under its own module: pick a short slug, namespace the code under `MyGame::`, mount its routes under `/mygame`, and add a card to `app/views/home/index.html.erb`. See [CLAUDE.md](CLAUDE.md) for the architectural details of the existing game.
+
+## Tech stack
 
 - Ruby on Rails 8
 - SQLite
 - Hotwire (Turbo + Stimulus)
 - ActionCable (WebSockets)
-- OpenRouter (for LLM integration)
+- Playwright (system tests)
+- OpenRouter (LLM integration)
