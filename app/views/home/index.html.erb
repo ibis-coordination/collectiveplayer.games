@@ -1,24 +1,25 @@
-<div class="home-container">
-  <h1>💬 Group Group Chat</h1>
-  <p class="subtitle">Two groups chat with each other, one word at a time</p>
+<div class="landing">
+  <h1>Collective Player Games</h1>
 
-  <%= form_with url: game_sessions_path, method: :post, class: "create-form" do %>
-    <div class="form-group">
-      <label for="host_name">Your Name</label>
-      <input type="text" name="host_name" id="host_name" placeholder="Enter your name" required>
-    </div>
+  <div class="concept">
+    <p>
+      In most multiplayer games, each person controls their own character.
+      In <strong>collective-player games</strong>, several people jointly control a
+      single character &mdash; many hands, one player.
+    </p>
+    <p>
+      Each game here uses some mechanism &mdash; voting, aggregation, sampling
+      &mdash; to combine individual inputs into a single group action.
+    </p>
+  </div>
 
-    <div class="form-group">
-      <label for="time_limit_seconds">Time per Round</label>
-      <select name="time_limit_seconds" id="time_limit_seconds">
-        <option value="">Unlimited</option>
-        <option value="5" selected>5 seconds</option>
-        <option value="10">10 seconds</option>
-        <option value="30">30 seconds</option>
-        <option value="60">60 seconds</option>
-      </select>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Create Session</button>
-  <% end %>
+  <h2>Games</h2>
+  <ul class="game-list">
+    <li>
+      <a href="/ggc" class="game-card">
+        <h3>Group Group Chat</h3>
+        <p>Two groups have a conversation. Each group composes its messages one word at a time, by anonymous vote.</p>
+      </a>
+    </li>
+  </ul>
 </div>

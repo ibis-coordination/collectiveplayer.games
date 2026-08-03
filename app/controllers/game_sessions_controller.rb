@@ -2,6 +2,9 @@ class GameSessionsController < ApplicationController
   before_action :set_game_session, only: [:show, :join, :join_group, :update_group_name, :start, :end_game, :submit_word]
   before_action :set_current_player, only: [:show, :join_group, :update_group_name, :start, :end_game, :submit_word]
 
+  def new
+  end
+
   def create
     @game_session = GameSession.new(game_session_params)
 

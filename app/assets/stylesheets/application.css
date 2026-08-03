@@ -690,3 +690,67 @@ h1 {
   font-style: italic;
   text-align: center;
 }
+
+/* Landing page: concept explainer + game list. Text is left-aligned
+   and reads at a comfortable measure; the game card is a full-width
+   tappable block. */
+.landing {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 8px 4px;
+}
+
+.landing h1 {
+  margin-bottom: 1rem;
+}
+
+.landing h2 {
+  font-size: 1.125rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 2rem 0 0.75rem;
+}
+
+.landing .concept p {
+  line-height: 1.55;
+  color: var(--text);
+  margin: 0 0 1rem;
+}
+
+.landing .game-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.landing .game-card {
+  display: block;
+  padding: 20px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.landing .game-card:hover,
+.landing .game-card:active {
+  background: var(--card-elevated);
+}
+
+.landing .game-card h3 {
+  margin: 0 0 0.5rem;
+  color: var(--blue);
+  font-size: 1.25rem;
+}
+
+.landing .game-card p {
+  margin: 0;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}

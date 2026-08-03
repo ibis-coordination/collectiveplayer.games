@@ -58,7 +58,7 @@ class ChatLayoutTest < ApplicationSystemTestCase
   private
 
   def start_active_game_with_conversation
-    visit root_path
+    visit ggc_path
     fill_in "Your Name", with: "Hostess"
     select "Unlimited", from: "Time per Round"
     click_on "Create Session"

@@ -49,7 +49,7 @@ class SendMessageTest < ApplicationSystemTestCase
   # seeds the current in-progress message so we can test both the empty
   # and mid-message paths.
   def start_active_game_with_words(word_texts)
-    visit root_path
+    visit ggc_path
     fill_in "Your Name", with: "Hostess"
     select "Unlimited", from: "Time per Round"
     click_on "Create Session"

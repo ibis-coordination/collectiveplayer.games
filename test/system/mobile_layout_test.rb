@@ -7,8 +7,23 @@ require "application_system_test_case"
 class MobileLayoutTest < ApplicationSystemTestCase
   MIN_TOUCH_TARGET = 44
 
-  test "home page fits the viewport with touch-friendly controls" do
+  test "landing page fits the viewport without horizontal overflow" do
     visit root_path
+
+    assert_no_horizontal_overflow
+    # Every game card on the landing page must be a fat touch target
+    card_heights = page.evaluate_script(
+      "Array.from(document.querySelectorAll('.game-card')).map(el => el.getBoundingClientRect().height)"
+    )
+    assert card_heights.any?, "expected at least one game card on the landing page"
+    card_heights.each do |h|
+      assert h >= MIN_TOUCH_TARGET,
+        "game card is #{h.round}px tall; should be at least #{MIN_TOUCH_TARGET}px"
+    end
+  end
+
+  test "Group Group Chat entry page fits the viewport with touch-friendly controls" do
+    visit ggc_path
 
     assert_no_horizontal_overflow
     assert_touch_friendly_controls
@@ -68,7 +83,7 @@ class MobileLayoutTest < ApplicationSystemTestCase
   private
 
   def create_session_via_ui
-    visit root_path
+    visit ggc_path
     fill_in "Your Name", with: "Hostess"
     select "Unlimited", from: "Time per Round"
     click_on "Create Session"
