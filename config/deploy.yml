@@ -1,5 +1,9 @@
 # Kamal deploy config for Collective Player Games (collectiveplayer.games).
-# Fill in the VPS IP under `servers:` before first deploy.
+#
+# The VPS hostname/IP is read from the COLLECTIVEPLAYER_GAMES_VPS env var
+# so it never lands in the repo. Set it in your shell before running Kamal:
+#   export COLLECTIVEPLAYER_GAMES_VPS=1.2.3.4
+# (Add to ~/.zshenv, direnv, or a password manager on your workstation.)
 
 service: collectiveplayer-games
 
@@ -8,7 +12,7 @@ image: ibis-coordination/collectiveplayer.games
 
 servers:
   web:
-    - YOUR_VPS_IP    # <-- fill in after provisioning the VPS
+    - <%= ENV.fetch("COLLECTIVEPLAYER_GAMES_VPS") %>
 
 # Kamal Proxy terminates SSL and multiplexes multiple apps on the same
 # host. Certs come from Let's Encrypt automatically once DNS for
@@ -54,7 +58,7 @@ aliases:
 accessories:
   db:
     image: postgres:17-alpine
-    host: YOUR_VPS_IP    # <-- same VPS as the app
+    host: <%= ENV.fetch("COLLECTIVEPLAYER_GAMES_VPS") %>    # same VPS as the app
     port: "127.0.0.1:5432:5432"    # only reachable from localhost on the host
     env:
       clear:
