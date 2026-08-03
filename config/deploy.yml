@@ -44,11 +44,16 @@ env:
     - RAILS_MASTER_KEY
     - POSTGRES_PASSWORD
 
-# Convenience shell/logs/console shortcuts:
-#   bin/kamal shell     → bash in the app container
-#   bin/kamal console   → rails console
-#   bin/kamal dbc       → psql shell against the app DB
+# Convenience shortcuts:
+#   bin/kamal ship --version=v0.1.0  → deploy a CI-built image tag
+#                                       (skips local build+push; the image
+#                                       must already exist in ghcr.io,
+#                                       built by .github/workflows/docker-publish.yml)
+#   bin/kamal shell                   → bash in the app container
+#   bin/kamal console                 → rails console
+#   bin/kamal dbc                     → psql shell against the app DB
 aliases:
+  ship: deploy --skip-push
   shell: app exec --interactive --reuse "bash"
   console: app exec --interactive --reuse "bin/rails console"
   dbc: app exec --interactive --reuse "bin/rails dbconsole"
