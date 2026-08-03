@@ -54,7 +54,7 @@ class MobileLayoutTest < ApplicationSystemTestCase
     assert_text "You're in this group"
 
     # Seed the opposing group directly; the UI can't act as two players at once
-    game = GameSession.order(:created_at).last
+    game = Ggc::GameSession.order(:created_at).last
     other_group = game.groups.create!(name: "Opponents")
     game.players.create!(name: "Opponent", group: other_group)
 

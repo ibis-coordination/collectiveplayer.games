@@ -2,7 +2,7 @@ require "test_helper"
 
 class GameSessionTest < ActiveSupport::TestCase
   test "generates unique 6-character code on create" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
 
     assert_not_nil session.code
     assert_equal 6, session.code.length
@@ -10,26 +10,26 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "generates host_token on create" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
 
     assert_not_nil session.host_token
     assert session.host_token.length > 20
   end
 
   test "defaults to waiting status" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
 
     assert session.waiting?
   end
 
   test "defaults to no current turn group" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
 
     assert_nil session.current_turn_group
   end
 
   test "conversation returns messages with group info" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group1 = session.groups.create!(name: "Team A")
     group2 = session.groups.create!(name: "Team B")
 
@@ -49,13 +49,13 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "conversation returns empty array when no messages" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
 
     assert_equal [], session.conversation
   end
 
   test "all_group_players_submitted? returns true when all group players have submitted" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player1 = session.players.create!(name: "Player 1", group: group)
     player2 = session.players.create!(name: "Player 2", group: group)
@@ -69,7 +69,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "all_group_players_submitted? returns false when not all group players have submitted" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player1 = session.players.create!(name: "Player 1", group: group)
     player2 = session.players.create!(name: "Player 2", group: group)
@@ -82,7 +82,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "player_submitted? returns true for player who submitted current message" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     session.update!(current_turn_group: group)
@@ -94,7 +94,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "player_submitted? returns false for player who has not submitted current message" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     session.update!(current_turn_group: group)
@@ -104,7 +104,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "player_submitted? checks current message not previous messages" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     session.update!(current_turn_group: group)
@@ -121,7 +121,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "determine_winner returns word with most votes (case-insensitive)" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player1 = session.players.create!(name: "Player 1", group: group)
     player2 = session.players.create!(name: "Player 2", group: group)
@@ -139,7 +139,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "determine_winner breaks ties randomly" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player1 = session.players.create!(name: "Player 1", group: group)
     player2 = session.players.create!(name: "Player 2", group: group)
@@ -155,7 +155,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "add_winning_word! creates word on current message" do
-    session = GameSession.create!(round_started_at: Time.current)
+    session = Ggc::GameSession.create!(round_started_at: Time.current)
     group = session.groups.create!(name: "Team A")
     session.update!(current_turn_group: group)
 
@@ -168,7 +168,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "add_winning_word! sets correct position for subsequent words" do
-    session = GameSession.create!(round_started_at: Time.current)
+    session = Ggc::GameSession.create!(round_started_at: Time.current)
     group = session.groups.create!(name: "Team A")
     session.update!(current_turn_group: group)
 
@@ -181,7 +181,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "switch_turn! changes to the other group" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group1 = session.groups.create!(name: "Team A")
     group2 = session.groups.create!(name: "Team B")
     session.update!(current_turn_group: group1, round_started_at: Time.current)
@@ -192,7 +192,7 @@ class GameSessionTest < ActiveSupport::TestCase
   end
 
   test "start_new_message! creates a new message for current group" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     session.update!(current_turn_group: group, round_started_at: Time.current)
 
@@ -212,7 +212,7 @@ class GameSessionTest < ActiveSupport::TestCase
   # prevents two simultaneous submits from double-processing a round.
 
   def build_active_session(players_in_group1: 2)
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group1 = session.groups.create!(name: "Team A")
     group2 = session.groups.create!(name: "Team B")
     players_in_group1.times { |i| session.players.create!(name: "P#{i + 1}", group: group1) }
@@ -274,7 +274,7 @@ class GameSessionTest < ActiveSupport::TestCase
   test "current_message is read-only and does not create messages" do
     session, = build_active_session
 
-    assert_no_difference "Message.count" do
+    assert_no_difference "Ggc::Message.count" do
       assert_nil session.current_message
     end
   end

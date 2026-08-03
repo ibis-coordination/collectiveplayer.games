@@ -13,15 +13,17 @@ Rails.application.routes.draw do
   # POST /ggc            create session
   # GET  /ggc/:code      the game session
   # POST /ggc/:code/*    session member actions
-  get "/ggc", to: "game_sessions#new", as: :ggc
-  resources :game_sessions, only: [:create, :show], param: :code, path: "ggc" do
-    member do
-      post :join
-      post :join_group
-      post :update_group_name
-      post :start
-      post :end_game
-      post :submit_word
+  scope module: :ggc do
+    get "/ggc", to: "game_sessions#new", as: :ggc
+    resources :game_sessions, only: [:create, :show], param: :code, path: "ggc" do
+      member do
+        post :join
+        post :join_group
+        post :update_group_name
+        post :start
+        post :end_game
+        post :submit_word
+      end
     end
   end
 end

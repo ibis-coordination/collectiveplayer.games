@@ -66,7 +66,7 @@ class ChatLayoutTest < ApplicationSystemTestCase
     click_on "Create & Join Group", match: :first
     assert_text "You're in this group"
 
-    game = GameSession.order(:created_at).last
+    game = Ggc::GameSession.order(:created_at).last
     other_group = game.groups.create!(name: "Opponents")
     game.players.create!(name: "Opponent", group: other_group)
 

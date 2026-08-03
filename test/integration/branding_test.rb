@@ -19,7 +19,7 @@ class BrandingTest < ActionDispatch::IntegrationTest
   end
 
   test "join page uses the Group Group Chat name" do
-    game = GameSession.create!(status: :waiting)
+    game = Ggc::GameSession.create!(status: :waiting)
 
     get game_session_path(game.code)
 

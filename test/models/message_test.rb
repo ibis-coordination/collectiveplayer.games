@@ -2,7 +2,7 @@ require "test_helper"
 
 class MessageTest < ActiveSupport::TestCase
   test "belongs to game session and group" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     message = session.messages.create!(group: group, position: 1)
 
@@ -11,7 +11,7 @@ class MessageTest < ActiveSupport::TestCase
   end
 
   test "has many words" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     message = session.messages.create!(group: group, position: 1)
     message.words.create!(position: 1, text: "hello")
@@ -21,7 +21,7 @@ class MessageTest < ActiveSupport::TestCase
   end
 
   test "has many submissions" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     message = session.messages.create!(group: group, position: 1)
@@ -31,7 +31,7 @@ class MessageTest < ActiveSupport::TestCase
   end
 
   test "text returns words joined by spaces in position order" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     message = session.messages.create!(group: group, position: 1)
     message.words.create!(position: 2, text: "world")
@@ -41,7 +41,7 @@ class MessageTest < ActiveSupport::TestCase
   end
 
   test "text returns empty string when no words" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     message = session.messages.create!(group: group, position: 1)
 
@@ -49,24 +49,24 @@ class MessageTest < ActiveSupport::TestCase
   end
 
   test "destroys words when destroyed" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     message = session.messages.create!(group: group, position: 1)
     message.words.create!(position: 1, text: "hello")
 
-    assert_difference "Word.count", -1 do
+    assert_difference "Ggc::Word.count", -1 do
       message.destroy
     end
   end
 
   test "destroys submissions when destroyed" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
     message = session.messages.create!(group: group, position: 1)
     message.submissions.create!(player: player, word: "hello")
 
-    assert_difference "Submission.count", -1 do
+    assert_difference "Ggc::Submission.count", -1 do
       message.destroy
     end
   end

@@ -17,7 +17,7 @@ export default class extends Controller {
   connect() {
     this.consumer = createConsumer()
     this.subscription = this.consumer.subscriptions.create(
-      { channel: "GameSessionChannel", code: this.codeValue },
+      { channel: "Ggc::GameSessionChannel", code: this.codeValue },
       {
         received: (data) => this.handleMessage(data),
         connected: () => console.log("Connected to game session"),

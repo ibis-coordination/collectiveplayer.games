@@ -131,7 +131,7 @@ class LLMGameOrchestrator
     puts "Setting up game..."
 
     # Create game session
-    @game_session = GameSession.create!
+    @game_session = Ggc::GameSession.create!
 
     # Create two groups
     @groups = GROUP_NAMES.map.with_index do |name, i|

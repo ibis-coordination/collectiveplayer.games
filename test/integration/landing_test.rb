@@ -31,7 +31,7 @@ class LandingTest < ActionDispatch::IntegrationTest
 
   test "session share link uses the /ggc/:code URL" do
     post game_sessions_path, params: { host_name: "Alice" }
-    game = GameSession.last
+    game = Ggc::GameSession.last
     follow_redirect!
 
     assert_response :success

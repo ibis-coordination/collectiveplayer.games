@@ -4,7 +4,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
   # Helper: Create game session and join as host (properly authenticated)
   def create_game_as_host(host_name: "Host")
     post game_sessions_path, params: { host_name: host_name }
-    GameSession.last
+    Ggc::GameSession.last
   end
 
   test "host can create game and start when conditions are met" do
@@ -61,7 +61,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
     game_session.players.create!(name: "Player 2", group: group2)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
-    assert_difference "Submission.count", 1 do
+    assert_difference "Ggc::Submission.count", 1 do
       post submit_word_game_session_path(game_session.code), params: { word: "hello" }
     end
     assert_response :ok
@@ -80,7 +80,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
     game_session.players.create!(name: "Player 1", group: group1)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
-    assert_no_difference "Submission.count" do
+    assert_no_difference "Ggc::Submission.count" do
       post submit_word_game_session_path(game_session.code), params: { word: "sneaky" }
     end
     assert_response :forbidden
@@ -119,7 +119,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "turn switching works correctly" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.players.create!(name: "Player 1", group: group1, token: game_session.host_token)
@@ -138,7 +138,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "conversation returns messages in position order" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.update!(status: :active, current_turn_group: group1)
@@ -218,9 +218,9 @@ class GameFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "player joins with name" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
 
-    assert_difference "Player.count", 1 do
+    assert_difference "Ggc::Player.count", 1 do
       post join_game_session_path(game_session.code), params: { name: "Bob" }
     end
 
@@ -231,9 +231,9 @@ class GameFlowTest < ActionDispatch::IntegrationTest
   end
 
   test "player cannot join without name" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
 
-    assert_no_difference "Player.count" do
+    assert_no_difference "Ggc::Player.count" do
       post join_game_session_path(game_session.code), params: { name: "" }
     end
 
@@ -244,11 +244,11 @@ class GameFlowTest < ActionDispatch::IntegrationTest
 
   test "creating a game generates unique session code" do
     post game_sessions_path, params: { host_name: "Alice" }
-    game1 = GameSession.last
+    game1 = Ggc::GameSession.last
 
     reset!
     post game_sessions_path, params: { host_name: "Bob" }
-    game2 = GameSession.last
+    game2 = Ggc::GameSession.last
 
     assert_not_equal game1.code, game2.code
     assert_match(/\A[A-Z0-9]{6}\z/, game1.code)
@@ -257,7 +257,7 @@ class GameFlowTest < ActionDispatch::IntegrationTest
 
   test "game can track time limit setting" do
     post game_sessions_path, params: { host_name: "Alice", time_limit_seconds: 30 }
-    game_session = GameSession.last
+    game_session = Ggc::GameSession.last
 
     assert_equal 30, game_session.time_limit_seconds
   end

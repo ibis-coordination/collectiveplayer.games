@@ -6,7 +6,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     params = { host_name: host_name }
     params[:time_limit_seconds] = time_limit if time_limit
     post game_sessions_path, params: params
-    GameSession.last
+    Ggc::GameSession.last
   end
 
   # Helper: Join a game session as a new player (properly authenticated)
@@ -18,11 +18,11 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   # ============= CREATE =============
 
   test "create creates a new game session with host player" do
-    assert_difference ["GameSession.count", "Player.count"], 1 do
+    assert_difference ["Ggc::GameSession.count", "Ggc::Player.count"], 1 do
       post game_sessions_path, params: { host_name: "Alice" }
     end
 
-    game_session = GameSession.last
+    game_session = Ggc::GameSession.last
     assert game_session.waiting?
     assert_equal 1, game_session.players.count
     assert_equal "Alice", game_session.players.first.name
@@ -33,14 +33,14 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   test "create with time_limit_seconds" do
     post game_sessions_path, params: { host_name: "Alice", time_limit_seconds: 30 }
 
-    game_session = GameSession.last
+    game_session = Ggc::GameSession.last
     assert_equal 30, game_session.time_limit_seconds
   end
 
   # ============= SHOW =============
 
   test "show renders join form for non-joined player" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
 
     get game_session_path(game_session.code)
 
@@ -51,9 +51,9 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   # ============= JOIN =============
 
   test "join creates a new player" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
 
-    assert_difference "Player.count", 1 do
+    assert_difference "Ggc::Player.count", 1 do
       post join_game_session_path(game_session.code), params: { name: "Bob" }
     end
 
@@ -62,7 +62,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   end
 
   test "join requires a name" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
 
     post join_game_session_path(game_session.code), params: { name: "" }
 
@@ -77,7 +77,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     # Create game and stay logged in as host
     game_session = create_game_as_host
 
-    assert_difference "Group.count", 1 do
+    assert_difference "Ggc::Group.count", 1 do
       post join_group_game_session_path(game_session.code), params: { group_id: "new" }
     end
 
@@ -141,7 +141,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
 
   test "start requires host" do
     # Create a game session with the host but don't stay logged in as host
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.players.create!(name: "Host", token: game_session.host_token, group: group1)
@@ -204,7 +204,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   # ============= END_GAME =============
 
   test "end_game requires host" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.players.create!(name: "Host", token: game_session.host_token, group: group1)
@@ -241,7 +241,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   # their group once the game starts. Completed games are view-only.
 
   def create_active_game
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.players.create!(name: "P1", group: group1)
@@ -253,7 +253,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   test "latecomer can join an active game as an ungrouped spectator" do
     game_session = create_active_game
 
-    assert_difference "Player.count", 1 do
+    assert_difference "Ggc::Player.count", 1 do
       post join_game_session_path(game_session.code), params: { name: "Latecomer" }
     end
 
@@ -266,7 +266,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     game_session = create_active_game
     game_session.update!(status: :complete)
 
-    assert_no_difference "Player.count" do
+    assert_no_difference "Ggc::Player.count" do
       post join_game_session_path(game_session.code), params: { name: "Latecomer" }
     end
 
@@ -361,7 +361,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
     # Host is in group1, which is the active group
-    assert_difference "Submission.count", 1 do
+    assert_difference "Ggc::Submission.count", 1 do
       post submit_word_game_session_path(game_session.code), params: { word: "hello" }
     end
 
@@ -379,7 +379,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
     # Host is in group2, but group1's turn
-    assert_no_difference "Submission.count" do
+    assert_no_difference "Ggc::Submission.count" do
       post submit_word_game_session_path(game_session.code), params: { word: "hello" }
     end
 
@@ -393,7 +393,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     host.update!(group: group1)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
-    assert_no_difference "Submission.count" do
+    assert_no_difference "Ggc::Submission.count" do
       post submit_word_game_session_path(game_session.code), params: { word: "" }
     end
 
@@ -440,14 +440,14 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
   # Regression: a visitor who never joined the session has no @current_player;
   # submit_word must reject them, not raise NoMethodError (500).
   test "submit_word rejects visitor who has not joined" do
-    game_session = GameSession.create!
+    game_session = Ggc::GameSession.create!
     group1 = game_session.groups.create!(name: "Team A")
     group2 = game_session.groups.create!(name: "Team B")
     game_session.players.create!(name: "P1", group: group1)
     game_session.players.create!(name: "P2", group: group2)
     game_session.update!(status: :active, current_turn_group: group1, round_started_at: Time.current)
 
-    assert_no_difference "Submission.count" do
+    assert_no_difference "Ggc::Submission.count" do
       post submit_word_game_session_path(game_session.code), params: { word: "hello" }
     end
 
@@ -463,7 +463,7 @@ class GameSessionsControllerTest < ActionDispatch::IntegrationTest
     message = game_session.current_message!
     message.submissions.create!(player: host, word: "first")
 
-    assert_no_difference "Submission.count" do
+    assert_no_difference "Ggc::Submission.count" do
       post submit_word_game_session_path(game_session.code), params: { word: "second" }
     end
 

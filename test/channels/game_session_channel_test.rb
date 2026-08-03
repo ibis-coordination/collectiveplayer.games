@@ -1,8 +1,10 @@
 require "test_helper"
 
 class GameSessionChannelTest < ActionCable::Channel::TestCase
+  tests Ggc::GameSessionChannel
+
   def build_active_session(time_limit: nil, round_started_at: Time.current)
-    session = GameSession.create!(time_limit_seconds: time_limit)
+    session = Ggc::GameSession.create!(time_limit_seconds: time_limit)
     group1 = session.groups.create!(name: "Team A")
     group2 = session.groups.create!(name: "Team B")
     2.times { |i| session.players.create!(name: "P#{i + 1}", group: group1) }

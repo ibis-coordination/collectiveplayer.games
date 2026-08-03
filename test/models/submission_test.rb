@@ -2,7 +2,7 @@ require "test_helper"
 
 class SubmissionTest < ActiveSupport::TestCase
   test "normalizes word by stripping whitespace" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player", group: group)
     message = session.messages.create!(group: group, position: 1)
@@ -12,7 +12,7 @@ class SubmissionTest < ActiveSupport::TestCase
   end
 
   test "normalizes word by taking only first word" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player", group: group)
     message = session.messages.create!(group: group, position: 1)
@@ -22,7 +22,7 @@ class SubmissionTest < ActiveSupport::TestCase
   end
 
   test "prevents duplicate submissions per player per message" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player", group: group)
     message = session.messages.create!(group: group, position: 1)
@@ -35,7 +35,7 @@ class SubmissionTest < ActiveSupport::TestCase
   end
 
   test "allows same player to submit in different messages" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player", group: group)
     message1 = session.messages.create!(group: group, position: 1)

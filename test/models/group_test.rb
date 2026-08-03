@@ -2,14 +2,14 @@ require "test_helper"
 
 class GroupTest < ActiveSupport::TestCase
   test "belongs to game session" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
 
     assert_equal session, group.game_session
   end
 
   test "has many players" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player1 = session.players.create!(name: "Player 1", group: group)
     player2 = session.players.create!(name: "Player 2", group: group)
@@ -20,7 +20,7 @@ class GroupTest < ActiveSupport::TestCase
   end
 
   test "has many messages" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     msg1 = session.messages.create!(group: group, position: 1)
     msg2 = session.messages.create!(group: group, position: 2)
@@ -29,7 +29,7 @@ class GroupTest < ActiveSupport::TestCase
   end
 
   test "validates presence of name" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.build(name: nil)
 
     assert_not group.valid?
@@ -37,7 +37,7 @@ class GroupTest < ActiveSupport::TestCase
   end
 
   test "nullifies players when destroyed" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     player = session.players.create!(name: "Player 1", group: group)
 
@@ -48,11 +48,11 @@ class GroupTest < ActiveSupport::TestCase
   end
 
   test "destroys messages when destroyed" do
-    session = GameSession.create!
+    session = Ggc::GameSession.create!
     group = session.groups.create!(name: "Team A")
     session.messages.create!(group: group, position: 1)
 
-    assert_difference "Message.count", -1 do
+    assert_difference "Ggc::Message.count", -1 do
       group.destroy
     end
   end
