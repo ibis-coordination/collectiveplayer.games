@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2026-08-04
+
+### Fixed
+
+- **Automatic migrations on deploy** — `bin/docker-entrypoint` only ran `db:prepare` when the container's CMD was exactly `./bin/rails server`, but production runs `./bin/thrust ./bin/rails server` so the check missed and no migrations ran. Ships with an empty database on first deploy → every session-creating action 500'd on `relation "ggc_game_sessions" does not exist`. The entrypoint now recognizes either invocation.
+
 ## [0.1.2] - 2026-08-04
 
 ### Fixed
