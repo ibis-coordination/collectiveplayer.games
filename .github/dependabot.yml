@@ -1,0 +1,37 @@
+# Dependabot version-update policy.
+# Docs: https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Ruby gems (Gemfile / Gemfile.lock)
+  - package-ecosystem: bundler
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # Bundle all minor + patch bumps into one PR per week.
+      # Majors still get their own PR so they can be reviewed on their own.
+      bundler-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # GitHub Actions used in .github/workflows/*.yml
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  # Docker base image (Ruby) in the Dockerfile
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 2

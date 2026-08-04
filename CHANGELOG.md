@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-08-04
+
+### Changed
+
+- **Dependency bumps** — batch update of every gem Dependabot flagged after the first release: `rails` 8.1.1 → 8.1.3.1 (pulling `activestorage`, `actiontext`, and the other Rails components with it), `rails-html-sanitizer` 1.6.2 → 1.7.1, `action_text-trix` 2.1.16 → 2.1.19, `websocket-driver` 0.8.0 → 0.8.2, `loofah` 2.25.0 → 2.25.2, `json` 2.18.0 → 2.21.2, `msgpack` 1.8.0 → 1.8.4, `sqlite3` 2.9.0 → 2.9.5. All patch/minor.
+
+### Added
+
+- **`.github/dependabot.yml`** — weekly bundler / GitHub Actions / Docker updates, with minor + patch bumps grouped into a single PR per ecosystem (majors still get their own PR for individual review).
+
 ## [0.1.3] - 2026-08-04
 
 ### Fixed
