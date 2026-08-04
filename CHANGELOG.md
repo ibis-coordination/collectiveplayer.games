@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-08-04
+
+### Changed
+
+- **Dependency bumps (bundler)** — `puma` 7.1.0 → 8.0.2 (major), `addressable` 2.8.8 → 2.9.0, `importmap-rails` 2.0.3 → 2.2.3, `turbo-rails` 2.0.12 → 2.0.23, `bootsnap` 1.20.1 → 1.24.6, `web-console` 4.2.1 → 4.3.0. Full test suite (123 tests) stays green.
+- **Dependency bumps (GitHub Actions)** — `actions/checkout` v4 → v7, `docker/login-action` v3 → v4, `docker/metadata-action` v5 → v6. All three majors are Node-runtime bumps (v24) with no API changes.
+- **Every gem now pessimistically pinned** (`"~> X.Y"`) in the Gemfile. Puma 7 → 8 flowed in silently on `bundle update` because the pin was `>= 5.0`; every previously-unpinned gem could have done the same. Majors now require an explicit constraint bump, which Dependabot files as its own PR alongside the grouped minor/patch batch. `tzinfo-data` is intentionally left unversioned so IANA timezone updates flow through.
+
 ## [0.1.4] - 2026-08-04
 
 ### Changed
