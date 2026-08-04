@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2026-08-04
+
+### Fixed
+
+- **Production Postgres connection** — `DATABASE_URL` was set under `env.clear` in `config/deploy.yml` with a `${POSTGRES_PASSWORD}` interpolation, but Kamal passes `env.clear` values literally, so Rails saw the URL with the literal string `${POSTGRES_PASSWORD}` as the password and `pg` reported "no password supplied". Rebuilt so `config/database.yml` composes the connection from an accessory-known host/database/user plus a `POSTGRES_PASSWORD` env var injected as a Kamal secret.
+
 ## [0.1.1] - 2026-08-04
 
 ### Fixed

@@ -36,10 +36,12 @@ builder:
 
 env:
   clear:
-    # Reach the Postgres accessory over Docker's shared kamal network.
-    DATABASE_URL: postgres://collectiveplayer_games:${POSTGRES_PASSWORD}@collectiveplayer-games-db:5432/collectiveplayer_games
     RAILS_LOG_TO_STDOUT: "true"
     RAILS_SERVE_STATIC_FILES: "true"
+  # POSTGRES_PASSWORD is read by config/database.yml; env.clear values
+  # don't expand ${VARS}, so the DB URL is assembled in database.yml
+  # from the accessory host + the injected password rather than passed
+  # as one pre-composed URL.
   secret:
     - RAILS_MASTER_KEY
     - POSTGRES_PASSWORD

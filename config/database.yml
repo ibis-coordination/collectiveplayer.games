@@ -25,4 +25,10 @@ production:
   <<: *default
   adapter: postgresql
   encoding: unicode
-  url: <%= ENV["DATABASE_URL"] %>
+  # Host / database / username come from the Kamal accessory (see
+  # config/deploy.yml). Password is the only piece that's a secret;
+  # Kamal injects POSTGRES_PASSWORD into the container's env.
+  host: collectiveplayer-games-db
+  database: collectiveplayer_games
+  username: collectiveplayer_games
+  password: <%= ENV["POSTGRES_PASSWORD"] %>
