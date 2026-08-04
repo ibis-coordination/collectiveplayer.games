@@ -70,11 +70,15 @@ Press `Ctrl+C` to end the game early.
 
 Group Group Chat is Ruby-namespaced under `Ggc::` (models, controllers, channel, views under `app/views/ggc/`, tables prefixed `ggc_`, mounted at `/ggc/*`). A new game follows the same pattern under its own module: pick a short slug, namespace the code under `MyGame::`, mount its routes under `/mygame`, and add a card to `app/views/home/index.html.erb`. See [CLAUDE.md](CLAUDE.md) for the architectural details of the existing game.
 
+## Deploy
+
+Production runs on a single VPS via [Kamal](https://kamal-deploy.org): app container + Postgres accessory, fronted by Kamal Proxy for TLS. Container images are built by GitHub Actions on `v*` tag pushes; deploys pull them onto the VPS. See [CLAUDE.md § Deployment](CLAUDE.md#deployment-kamal-to-a-vps) for the full release flow and the env vars you need to set locally.
+
 ## Tech stack
 
 - Ruby on Rails 8
-- SQLite
+- SQLite (dev/test); PostgreSQL + `solid_cable` for ActionCable pub/sub (production)
 - Hotwire (Turbo + Stimulus)
-- ActionCable (WebSockets)
-- Playwright (system tests)
+- Playwright (system tests, mobile viewport)
 - OpenRouter (LLM integration)
+- Kamal + GitHub Container Registry (deploy)
