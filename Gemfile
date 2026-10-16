@@ -15,13 +15,13 @@ gem "sprockets-rails", "~> 3.5"
 
 # SQLite in development/test; Postgres in production (see database.yml)
 gem "sqlite3", "~> 2.9", group: [:development, :test]
-gem "pg", "~> 1.5", group: :production
+gem "pg", "~> 1.7", group: :production
 
 # Use the Puma web server [https://github.com/puma/puma]
 gem "puma", "~> 8.0"
 
 # ActionCable adapter that uses Postgres NOTIFY/LISTEN instead of Redis
-gem "solid_cable", "~> 4.0"
+gem "solid_cable", "~> 4.1"
 
 # Deploy this application anywhere as a Docker container [https://kamal-deploy.org]
 gem "kamal", "~> 2.12", require: false
@@ -54,7 +54,7 @@ gem "stimulus-rails", "~> 1.3"
 gem "tzinfo-data", platforms: %i[ windows jruby ]
 
 # Reduces boot times through caching; required in config/boot.rb
-gem "bootsnap", "~> 1.24", require: false
+gem "bootsnap", "~> 1.26", require: false
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
