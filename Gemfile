@@ -14,7 +14,7 @@ gem "rails", "~> 8.1"
 gem "sprockets-rails", "~> 3.5"
 
 # SQLite in development/test; Postgres in production (see database.yml)
-gem "sqlite3", "~> 2.9", group: [:development, :test]
+gem "sqlite3", "~> 2.10", group: [:development, :test]
 gem "pg", "~> 1.7", group: :production
 
 # Use the Puma web server [https://github.com/puma/puma]
