@@ -18,7 +18,7 @@ gem "sqlite3", "~> 2.10", group: [:development, :test]
 gem "pg", "~> 1.7", group: :production
 
 # Use the Puma web server [https://github.com/puma/puma]
-gem "puma", "~> 8.0"
+gem "puma", "~> 8.1"
 
 # ActionCable adapter that uses Postgres NOTIFY/LISTEN instead of Redis
 gem "solid_cable", "~> 4.1"
